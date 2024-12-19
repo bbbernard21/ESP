@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Academic Overview -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Academic Overview</h5>
+                <span class="badge bg-primary">GPA: {{ "%.2f"|format(gpa) }}</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in academic_records %}
+                            <tr>
+                                <td>{{ record.course.name }}</td>
+                                <td>{{ record.grade if record.grade else 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if record.status == 'completed' else 'warning' }}">
+                                        {{ record.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('academic.course_detail', course_id=record.course.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('academic.goals') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-bullseye me-2"></i>Set Academic Goals
+                    </a>
+                    <a href="{{ url_for('communication.messages') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-envelope me-2"></i>Send Message
+                    </a>
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="fas fa-calendar me-2"></i>View Schedule
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Notifications</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for notification in notifications[:5] %}
+                <a href="#" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ notification.title }}</h6>
+                        <small>{{ notification.created_at.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    <p class="mb-1">{{ notification.body[:100] }}...</p>
+                </a>
+                {% else %}
+                <div class="list-group-item">No new notifications</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

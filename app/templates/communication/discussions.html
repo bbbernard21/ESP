@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Course Discussions</h4>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newDiscussionModal">
+                    <i class="fas fa-plus me-1"></i> New Discussion
+                </button>
+            </div>
+            <div class="card-body">
+                {% if discussions %}
+                <div class="list-group">
+                    {% for discussion in discussions %}
+                    <a href="{{ url_for('communication.discussion_detail', discussion_id=discussion.id) }}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ discussion.title }}</h6>
+                            <small class="text-muted">
+                                {{ discussion.created_at.strftime('%Y-%m-%d') }}
+                            </small>
+                        </div>
+                        <p class="mb-1">
+                            Started by {{ discussion.created_by.username }}
+                        </p>
+                        <small class="text-muted">
+                            {{ discussion.posts.count() }} posts
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No discussions started yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Discussion Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Keep discussions course-related
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Be respectful to others
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Use appropriate language
+                    </li>
+                    <li>
+                        <i class="fas fa-check text-success me-2"></i>
+                        Share knowledge constructively
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Discussion Modal -->
+<div class="modal fade" id="newDiscussionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Start New Discussion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('communication.create_discussion', course_id=course_id) }}">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Discussion Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Initial Post</label>
+                        <textarea class="form-control" id="content" name="content" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Discussion</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

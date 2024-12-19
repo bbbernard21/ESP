@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Messages List -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#inbox">Inbox</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#sent">Sent</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <!-- Inbox -->
+                    <div class="tab-pane fade show active" id="inbox">
+                        {% if messages_received %}
+                        <div class="list-group">
+                            {% for message in messages_received %}
+                            <div class="list-group-item list-group-item-action {{ 'unread' if not message.read }}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">From: {{ message.sender.username }}</h6>
+                                    <small class="text-muted">{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                                <p class="mb-1">{{ message.body }}</p>
+                                {% if not message.read %}
+                                <small class="text-primary">Unread</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No messages in inbox.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Sent Messages -->
+                    <div class="tab-pane fade" id="sent">
+                        {% if messages_sent %}
+                        <div class="list-group">
+                            {% for message in messages_sent %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">To: {{ message.recipient.username }}</h6>
+                                    <small class="text-muted">{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                                <p class="mb-1">{{ message.body }}</p>
+                                {% if message.read %}
+                                <small class="text-success">Read {{ message.read_timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                                {% else %}
+                                <small class="text-muted">Not read yet</small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No sent messages.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Message Form -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">New Message</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('communication.send_message') }}">
+                    <div class="mb-3">
+                        <label for="recipient" class="form-label">To</label>
+                        <input type="text" class="form-control" id="recipient" name="recipient" 
+                               placeholder="Enter username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" name="message" rows="4" 
+                                  maxlength="1000" required
+                                  onkeyup="updateMessageCounter(this)"></textarea>
+                        <small id="message-counter" class="form-text text-muted">1000 characters remaining</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tabs
+    var triggerTabList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tab"]'));
+    triggerTabList.forEach(function(triggerEl) {
+        new bootstrap.Tab(triggerEl);
+    });
+});
+</script>
+{% endblock %} 

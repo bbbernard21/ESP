@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <!-- Settings Navigation -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="nav flex-column nav-pills" role="tablist">
+                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#account">
+                        <i class="fas fa-user-cog me-2"></i>Account Settings
+                    </button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#notifications">
+                        <i class="fas fa-bell me-2"></i>Notification Preferences
+                    </button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#privacy">
+                        <i class="fas fa-shield-alt me-2"></i>Privacy
+                    </button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#security">
+                        <i class="fas fa-lock me-2"></i>Security
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="tab-content">
+            <!-- Account Settings -->
+            <div class="tab-pane fade show active" id="account">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Account Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('main.update_account_settings') }}">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       value="{{ current_user.username }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="timezone" class="form-label">Timezone</label>
+                                <select class="form-select" id="timezone" name="timezone">
+                                    <option value="UTC">UTC</option>
+                                    <option value="America/New_York">Eastern Time</option>
+                                    <option value="America/Chicago">Central Time</option>
+                                    <option value="America/Denver">Mountain Time</option>
+                                    <option value="America/Los_Angeles">Pacific Time</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Preferences -->
+            <div class="tab-pane fade" id="notifications">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Notification Preferences</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('main.update_notification_settings') }}">
+                            <div class="mb-3">
+                                <h6>Email Notifications</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="email_messages" name="email_messages">
+                                    <label class="form-check-label" for="email_messages">
+                                        Receive email notifications for new messages
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="email_grades" name="email_grades">
+                                    <label class="form-check-label" for="email_grades">
+                                        Receive email notifications for grade updates
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <h6>Push Notifications</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="push_messages" name="push_messages">
+                                    <label class="form-check-label" for="push_messages">
+                                        Enable push notifications for new messages
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="push_grades" name="push_grades">
+                                    <label class="form-check-label" for="push_grades">
+                                        Enable push notifications for grade updates
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Preferences</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Settings -->
+            <div class="tab-pane fade" id="privacy">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Privacy Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('main.update_privacy_settings') }}">
+                            <div class="mb-3">
+                                <h6>Profile Visibility</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show_email" name="show_email">
+                                    <label class="form-check-label" for="show_email">
+                                        Show email to other students
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show_grades" name="show_grades">
+                                    <label class="form-check-label" for="show_grades">
+                                        Show grades to other students
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Privacy Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="tab-pane fade" id="security">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Security Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('main.update_password') }}">
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" 
+                                       name="current_password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" 
+                                       name="new_password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" 
+                                       name="confirm_password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Change Password</button>
+                        </form>
+
+                        <hr>
+
+                        <h6 class="mb-3">Two-Factor Authentication</h6>
+                        <button class="btn btn-outline-primary" onclick="setupTwoFactor()">
+                            <i class="fas fa-shield-alt me-1"></i> Setup Two-Factor Authentication
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setupTwoFactor() {
+    alert('Two-factor authentication setup will be implemented in a future update.');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap pills
+    var triggerTabList = [].slice.call(document.querySelectorAll('[data-bs-toggle="pill"]'));
+    triggerTabList.forEach(function(triggerEl) {
+        new bootstrap.Tab(triggerEl);
+    });
+});
+</script>
+{% endblock %} 

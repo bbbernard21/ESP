@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Academic Goals List -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Academic Goals</h4>
+            </div>
+            <div class="card-body">
+                {% if goals %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Target Grade</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for goal in goals %}
+                            <tr>
+                                <td>{{ goal.course.code }} - {{ goal.course.name }}</td>
+                                <td>{{ goal.target_grade }}</td>
+                                <td>{{ goal.deadline.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if goal.status == 'achieved' else 'warning' }}">
+                                        {{ goal.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="editGoal('{{ goal.id }}')">
+                                        Edit
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No academic goals set yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Set New Goal Form -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Set New Goal</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('academic.goals') }}" id="goalForm">
+                    <div class="mb-3">
+                        <label for="course_id" class="form-label">Course</label>
+                        <select class="form-select" id="course_id" name="course_id" required>
+                            <option value="">Select a course</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.code }} - {{ course.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="target_grade" class="form-label">Target Grade</label>
+                        <input type="number" class="form-control" id="target_grade" name="target_grade" 
+                               min="0" max="4" step="0.1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Set Goal</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Goal Modal -->
+<div class="modal fade" id="editGoalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Goal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editGoalForm" method="POST">
+                    <div class="mb-3">
+                        <label for="edit_target_grade" class="form-label">Target Grade</label>
+                        <input type="number" class="form-control" id="edit_target_grade" name="target_grade" 
+                               min="0" max="4" step="0.1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_status" class="form-label">Status</label>
+                        <select class="form-select" id="edit_status" name="status" required>
+                            <option value="active">Active</option>
+                            <option value="achieved">Achieved</option>
+                            <option value="missed">Missed</option>
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editGoal(goalId) {
+    const modal = new bootstrap.Modal(document.getElementById('editGoalModal'));
+    const form = document.getElementById('editGoalForm');
+    form.action = `/goal/edit/${goalId}`;
+    modal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('goalForm');
+    form.addEventListener('submit', function(e) {
+        const targetGrade = parseFloat(document.getElementById('target_grade').value);
+        if (targetGrade < 0 || targetGrade > 4) {
+            e.preventDefault();
+            alert('Target grade must be between 0 and 4');
+        }
+    });
+
+    const editForm = document.getElementById('editGoalForm');
+    editForm.addEventListener('submit', function(e) {
+        const targetGrade = parseFloat(document.getElementById('edit_target_grade').value);
+        if (targetGrade < 0 || targetGrade > 4) {
+            e.preventDefault();
+            alert('Target grade must be between 0 and 4');
+        }
+    });
+});
+</script>
+{% endblock %} 

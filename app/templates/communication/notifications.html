@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Notifications</h4>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="markAllAsRead()">
+                        <i class="fas fa-check-double me-1"></i> Mark All as Read
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                <div class="list-group">
+                    {% for notification in notifications %}
+                    <div class="list-group-item {{ 'unread' if not notification.read }}" 
+                         id="notification-{{ notification.id }}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                {% if notification.priority == 'high' %}
+                                <i class="fas fa-exclamation-circle text-danger me-1"></i>
+                                {% endif %}
+                                {{ notification.title }}
+                            </h6>
+                            <small class="text-{{ 'danger' if notification.priority == 'high' else 'muted' }}">
+                                {{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </small>
+                        </div>
+                        <p class="mb-1">{{ notification.body }}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-muted">Category: {{ notification.category|title }}</small>
+                            {% if not notification.read %}
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="markAsRead('{{ notification.id }}')">
+                                Mark as Read
+                            </button>
+                            {% else %}
+                            <small class="text-muted">
+                                Read on {{ notification.read_at.strftime('%Y-%m-%d %H:%M') }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No notifications to display.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function markAsRead(notificationId) {
+    fetch(`/mark_notification_read/${notificationId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const notification = document.querySelector(`#notification-${notificationId}`);
+                notification.classList.remove('unread');
+                const button = notification.querySelector('button');
+                const timestamp = new Date().toLocaleString();
+                button.parentNode.innerHTML = `<small class="text-muted">Read on ${timestamp}</small>`;
+                updateNotificationCount();
+            }
+        });
+}
+
+function markAllAsRead() {
+    const unreadNotifications = document.querySelectorAll('.unread');
+    unreadNotifications.forEach(notification => {
+        const notificationId = notification.id.split('-')[1];
+        markAsRead(notificationId);
+    });
+}
+
+function updateNotificationCount() {
+    const badge = document.querySelector('#notification-badge');
+    if (badge) {
+        const currentCount = parseInt(badge.textContent);
+        if (currentCount > 1) {
+            badge.textContent = currentCount - 1;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+</script>
+{% endblock %} 

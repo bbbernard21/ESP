@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ course.name }} - Course Materials</h4>
+                <a href="{{ url_for('academic.course_detail', course_id=course.id) }}" 
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Course
+                </a>
+            </div>
+            <div class="card-body">
+                {% if materials %}
+                <div class="list-group">
+                    {% for material in materials %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ material.title }}</h5>
+                            <small class="text-muted">{{ material.material_type|title }}</small>
+                        </div>
+                        <p class="mb-1">{{ material.description }}</p>
+                        {% if material.due_date %}
+                        <small class="text-danger">Due: {{ material.due_date.strftime('%Y-%m-%d') }}</small>
+                        {% endif %}
+                        <div class="mt-2">
+                            <a href="#" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No materials available for this course yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

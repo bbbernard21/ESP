@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Course Information -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ course.code }} - {{ course.name }}</h4>
+                <span class="badge bg-primary">{{ course.credits }} credits</span>
+            </div>
+            <div class="card-body">
+                <h5>Course Description</h5>
+                <p>{{ course.description }}</p>
+                
+                <hr>
+                
+                <h5>Academic Record</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-{{ 'success' if academic_record.status == 'completed' else 'warning' }}">
+                                {{ academic_record.status|title }}
+                            </span>
+                        </p>
+                        <p><strong>Semester:</strong> {{ academic_record.semester }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Current Grade:</strong> {{ academic_record.grade if academic_record.grade else 'N/A' }}</p>
+                        <p><strong>Academic Year:</strong> {{ academic_record.academic_year }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Materials -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Course Materials</h5>
+            </div>
+            <div class="card-body">
+                {% if materials %}
+                <div class="list-group">
+                    {% for material in materials %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ material.title }}</h6>
+                            <small class="text-muted">{{ material.material_type|title }}</small>
+                        </div>
+                        <p class="mb-1">{{ material.description }}</p>
+                        {% if material.due_date %}
+                        <small class="text-danger">Due: {{ material.due_date.strftime('%Y-%m-%d') }}</small>
+                        {% endif %}
+                        <div class="mt-2">
+                            <a href="#" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No materials available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Academic Goal -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Academic Goal</h5>
+            </div>
+            <div class="card-body">
+                {% if academic_goal %}
+                <p><strong>Target Grade:</strong> {{ academic_goal.target_grade }}</p>
+                <p><strong>Status:</strong> 
+                    <span class="badge bg-{{ 'success' if academic_goal.status == 'achieved' else 'warning' }}">
+                        {{ academic_goal.status|title }}
+                    </span>
+                </p>
+                <p><strong>Deadline:</strong> {{ academic_goal.deadline.strftime('%Y-%m-%d') }}</p>
+                <p>{{ academic_goal.description }}</p>
+                {% else %}
+                <p class="text-muted">No academic goal set for this course.</p>
+                <a href="{{ url_for('academic.goals') }}" class="btn btn-primary">
+                    <i class="fas fa-bullseye me-1"></i> Set Goal
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Course Discussion -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Course Discussion</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('communication.course_discussions', course_id=course.id) }}" 
+                   class="btn btn-outline-primary w-100">
+                    <i class="fas fa-comments me-1"></i> View Discussions
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
