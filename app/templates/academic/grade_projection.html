@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Grade Calculator - {{ course.name }}</h4>
+                <a href="{{ url_for('academic.course_detail', course_id=course.id) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Course
+                </a>
+            </div>
+            <div class="card-body">
+                <form id="gradeProjectionForm">
+                    <div class="mb-3">
+                        <label for="current_grade" class="form-label">Current Grade</label>
+                        <input type="number" class="form-control" id="current_grade" name="current_grade" 
+                               step="0.01" min="0" max="4" value="{{ academic_record.grade or 0 }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="remaining_weight" class="form-label">Remaining Assignment Weight (%)</label>
+                        <input type="number" class="form-control" id="remaining_weight" name="remaining_weight" 
+                               min="0" max="100" required>
+                        <small class="text-muted">Enter the total percentage weight of remaining assignments</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="target_grade" class="form-label">Target Final Grade</label>
+                        <input type="number" class="form-control" id="target_grade" name="target_grade" 
+                               step="0.01" min="0" max="4" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Calculate Required Grade</button>
+                </form>
+
+                <div id="result" class="mt-4" style="display: none;">
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">Required Grade on Remaining Work</h5>
+                        <p class="mb-0">To achieve your target grade, you need to score <strong id="required_grade"></strong> on the remaining assignments.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Grade Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Current Grade:</strong> {{ academic_record.grade if academic_record.grade else 'Not graded' }}</p>
+                <p><strong>Course Credits:</strong> {{ course.credits }}</p>
+                {% if academic_goal %}
+                <p><strong>Target Grade:</strong> {{ academic_goal.target_grade }}</p>
+                {% endif %}
+                <hr>
+                <h6>GPA Scale Reference</h6>
+                <ul class="list-unstyled small">
+                    <li>A (4.0): 93-100%</li>
+                    <li>A- (3.7): 90-92%</li>
+                    <li>B+ (3.3): 87-89%</li>
+                    <li>B (3.0): 83-86%</li>
+                    <li>B- (2.7): 80-82%</li>
+                    <li>C+ (2.3): 77-79%</li>
+                    <li>C (2.0): 73-76%</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('gradeProjectionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    fetch('{{ url_for("academic.grade_projection", course_id=course.id) }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('required_grade').textContent = data.required_grade + '%';
+        } else {
+            alert('Error calculating grade: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('An error occurred while calculating the grade.');
+    });
+});
+</script>
+{% endblock %} 

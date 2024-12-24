@@ -1,6 +1,6 @@
 from app import create_app, db
 from app.models.user import User
-from app.models.academic import Course, AcademicRecord, AcademicGoal, CourseMaterial
+from app.models.academic import Course, AcademicRecord, AcademicGoal, CourseMaterial, Assignment, AssignmentSubmission
 from app.models.communication import Message, Notification, Discussion, DiscussionPost
 from datetime import datetime, timedelta
 
@@ -167,6 +167,47 @@ def seed_database():
 
     db.session.commit()
 
+    # Create assignments
+    assignments = [
+        {
+            'title': 'Midterm Project',
+            'description': 'Individual project implementing core concepts',
+            'total_points': 100,
+            'weight': 30,  # 30% of course grade
+            'due_date': datetime.utcnow() + timedelta(days=30)
+        },
+        {
+            'title': 'Final Assignment',
+            'description': 'Comprehensive assignment covering all topics',
+            'total_points': 100,
+            'weight': 40,  # 40% of course grade
+            'due_date': datetime.utcnow() + timedelta(days=60)
+        }
+    ]
+
+    for course in created_courses:
+        for assignment_data in assignments:
+            assignment = Assignment(
+                course_id=course.id,
+                **assignment_data
+            )
+            db.session.add(assignment)
+            db.session.commit()
+
+            # Create some submissions for the first student
+            if course == created_courses[0]:  # Only for the first course
+                submission = AssignmentSubmission(
+                    assignment_id=assignment.id,
+                    student_id=created_users[0].id,  # student1
+                    file_path=f'/submissions/{assignment.id}/submission.pdf',
+                    grade=85.0 if 'Midterm' in assignment.title else None,
+                    feedback='Good work!' if 'Midterm' in assignment.title else None,
+                    status='graded' if 'Midterm' in assignment.title else 'submitted'
+                )
+                db.session.add(submission)
+
+    db.session.commit()
+
     # Create discussions
     for course in created_courses:
         discussion = Discussion(
@@ -196,11 +237,65 @@ def seed_database():
 
     db.session.commit()
 
+def seed_assignments():
+    # Get existing courses and users
+    courses = Course.query.all()
+    students = User.query.filter_by(role='student').all()
+
+    if not courses or not students:
+        print("No courses or students found. Please run the full seed_database() first.")
+        return
+
+    # Create assignments
+    assignments = [
+        {
+            'title': 'Midterm Project',
+            'description': 'Individual project implementing core concepts',
+            'total_points': 100,
+            'weight': 30,  # 30% of course grade
+            'due_date': datetime.utcnow() + timedelta(days=30)
+        },
+        {
+            'title': 'Final Assignment',
+            'description': 'Comprehensive assignment covering all topics',
+            'total_points': 100,
+            'weight': 40,  # 40% of course grade
+            'due_date': datetime.utcnow() + timedelta(days=60)
+        }
+    ]
+
+    for course in courses:
+        for assignment_data in assignments:
+            # Check if assignment already exists
+            existing = Assignment.query.filter_by(
+                course_id=course.id,
+                title=assignment_data['title']
+            ).first()
+            
+            if not existing:
+                assignment = Assignment(
+                    course_id=course.id,
+                    **assignment_data
+                )
+                db.session.add(assignment)
+                db.session.commit()
+
+                # Create some submissions for the first student
+                if course == courses[0] and students:  # Only for the first course
+                    submission = AssignmentSubmission(
+                        assignment_id=assignment.id,
+                        student_id=students[0].id,
+                        file_path=f'/submissions/{assignment.id}/submission.pdf',
+                        grade=85.0 if 'Midterm' in assignment.title else None,
+                        feedback='Good work!' if 'Midterm' in assignment.title else None,
+                        status='graded' if 'Midterm' in assignment.title else 'submitted'
+                    )
+                    db.session.add(submission)
+                    db.session.commit()
+
 if __name__ == '__main__':
     app = create_app()
     with app.app_context():
-        # Create all tables
-        db.create_all()
-        # Seed the database
-        seed_database()
-        print("Database seeded successfully!") 
+        # Seed only assignments
+        seed_assignments()
+        print("Assignments seeded successfully!") 

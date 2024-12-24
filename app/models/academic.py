@@ -48,3 +48,29 @@ class CourseMaterial(db.Model):
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     due_date = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow) 
+
+class Assignment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    title = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text)
+    due_date = db.Column(db.DateTime)
+    total_points = db.Column(db.Float)
+    weight = db.Column(db.Float)  # Percentage weight in course grade
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    submissions = db.relationship('AssignmentSubmission', backref='assignment', lazy='dynamic')
+
+class AssignmentSubmission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    file_path = db.Column(db.String(255))
+    submission_date = db.Column(db.DateTime, default=datetime.utcnow)
+    grade = db.Column(db.Float)
+    feedback = db.Column(db.Text)
+    status = db.Column(db.String(20), default='submitted')  # submitted, graded, late
+    
+    def is_late(self):
+        return self.submission_date > self.assignment.due_date if self.assignment.due_date else False 
