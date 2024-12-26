@@ -21,9 +21,9 @@
                         <i class="fas fa-book"></i> My Courses
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('student.courses') }}">Course List</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.course_materials') }}">Course Materials</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.course_schedule') }}">Course Schedule</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('academic.courses') }}">Course List</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('academic.course_materials', course_id=0) }}">Course Materials</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.dashboard') }}">Course Schedule</a></li>
                     </ul>
                 </li>
 
@@ -60,19 +60,9 @@
                         <i class="fas fa-comments"></i> Communication
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('communication.messages') }}">Messages</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('communication.notifications') }}">Notifications</a></li>
-                    </ul>
-                </li>
-
-                <!-- Academic -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-graduation-cap"></i> Academic
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('academic.goals') }}">Academic Goals</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('academic.courses') }}">My Courses</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.messages') }}">Messages</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.notifications') }}">Notifications</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.announcements') }}">Announcements</a></li>
                     </ul>
                 </li>
 
@@ -93,7 +83,7 @@
             <ul class="navbar-nav">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user"></i> {{ current_user.full_name }}
+                        <i class="fas fa-user"></i> {{ current_user.first_name }} {{ current_user.last_name }}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">Profile</a></li>

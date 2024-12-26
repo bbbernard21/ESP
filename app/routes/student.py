@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
-from app.models.academic import Course, AcademicRecord, AcademicGoal, Assignment, AssignmentSubmission, Exam, ExamGrade
+from app.models.academic import Course, AcademicRecord, AcademicGoal, Assignment, AssignmentSubmission, Exam, ExamGrade, Quiz, QuizSubmission
+from app.models.communication import Message, Notification, Announcement
 from app.models.user import User, UserRole
 from app.decorators import student_required
 from datetime import datetime
@@ -396,4 +397,182 @@ def view_exam(exam_id):
     return render_template('student/view_exam.html',
                          title='View Exam',
                          exam=exam,
-                         grade=grade) 
+                         grade=grade)
+
+@student.route('/student/assignments')
+@login_required
+@student_required
+def assignments():
+    enrolled_courses = Course.query.join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id,
+        AcademicRecord.status == 'enrolled'
+    ).all()
+    
+    assignments = Assignment.query.join(Course).join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id
+    ).all()
+    
+    return render_template('student/assignments.html',
+                         title='My Assignments',
+                         assignments=assignments,
+                         courses=enrolled_courses)
+
+@student.route('/student/quizzes')
+@login_required
+@student_required
+def quizzes():
+    enrolled_courses = Course.query.join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id,
+        AcademicRecord.status == 'enrolled'
+    ).all()
+    
+    quizzes = Quiz.query.join(Course).join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id
+    ).all()
+    
+    return render_template('student/quizzes.html',
+                         title='My Quizzes',
+                         quizzes=quizzes,
+                         courses=enrolled_courses)
+
+@student.route('/student/exams')
+@login_required
+@student_required
+def exams():
+    enrolled_courses = Course.query.join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id,
+        AcademicRecord.status == 'enrolled'
+    ).all()
+    
+    exams = Exam.query.join(Course).join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id
+    ).all()
+    
+    return render_template('student/exams.html',
+                         title='My Exams',
+                         exams=exams,
+                         courses=enrolled_courses)
+
+@student.route('/student/submissions')
+@login_required
+@student_required
+def submissions():
+    submissions = AssignmentSubmission.query.filter_by(
+        student_id=current_user.id
+    ).order_by(AssignmentSubmission.submitted_at.desc()).all()
+    
+    return render_template('student/submissions.html',
+                         title='My Submissions',
+                         submissions=submissions)
+
+@student.route('/student/grades')
+@login_required
+@student_required
+def grades():
+    enrolled_courses = Course.query.join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id,
+        AcademicRecord.status == 'enrolled'
+    ).all()
+    
+    for course in enrolled_courses:
+        # Get assignment grades
+        assignment_grades = AssignmentSubmission.query.join(Assignment).filter(
+            Assignment.course_id == course.id,
+            AssignmentSubmission.student_id == current_user.id,
+            AssignmentSubmission.status == 'graded'
+        ).all()
+        
+        # Get exam grades
+        exam_grades = ExamGrade.query.join(Exam).filter(
+            Exam.course_id == course.id,
+            ExamGrade.student_id == current_user.id
+        ).all()
+        
+        course.grades = {
+            'assignments': assignment_grades,
+            'exams': exam_grades
+        }
+    
+    return render_template('student/grades.html',
+                         title='My Grades',
+                         courses=enrolled_courses)
+
+@student.route('/student/academic_progress')
+@login_required
+@student_required
+def academic_progress():
+    return redirect(url_for('student.progress'))
+
+@student.route('/student/performance')
+@login_required
+@student_required
+def performance():
+    return redirect(url_for('student.analytics'))
+
+@student.route('/student/messages')
+@login_required
+@student_required
+def messages():
+    received_messages = Message.query.filter_by(
+        recipient_id=current_user.id
+    ).order_by(Message.sent_at.desc()).all()
+    
+    sent_messages = Message.query.filter_by(
+        sender_id=current_user.id
+    ).order_by(Message.sent_at.desc()).all()
+    
+    return render_template('student/messages.html',
+                         title='Messages',
+                         received_messages=received_messages,
+                         sent_messages=sent_messages)
+
+@student.route('/student/notifications')
+@login_required
+@student_required
+def notifications():
+    notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).all()
+    
+    return render_template('student/notifications.html',
+                         title='Notifications',
+                         notifications=notifications)
+
+@student.route('/student/announcements')
+@login_required
+@student_required
+def announcements():
+    enrolled_courses = Course.query.join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id,
+        AcademicRecord.status == 'enrolled'
+    ).all()
+    
+    announcements = Announcement.query.join(Course).join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id
+    ).order_by(Announcement.created_at.desc()).all()
+    
+    return render_template('student/announcements.html',
+                         title='Announcements',
+                         announcements=announcements,
+                         courses=enrolled_courses)
+
+@student.route('/student/help')
+@login_required
+@student_required
+def help():
+    return render_template('student/help.html',
+                         title='Help Center')
+
+@student.route('/student/contact')
+@login_required
+@student_required
+def contact():
+    return render_template('student/contact.html',
+                         title='Contact Support')
+
+@student.route('/student/feedback')
+@login_required
+@student_required
+def feedback():
+    return render_template('student/feedback.html',
+                         title='Submit Feedback') 
