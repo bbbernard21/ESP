@@ -1,7 +1,8 @@
 from app import create_app, db
 from app.models.user import User
 from app.models.academic import Course, AcademicRecord, AcademicGoal, CourseMaterial, Program, Assignment, AssignmentSubmission
-from app.models.communication import Message, Notification, Discussion, DiscussionPost
+from app.models.communication import Message, Notification, Conversation, Discussion, DiscussionPost, Announcement
+from app.models.admin import Admin
 
 app = create_app()
 
@@ -19,8 +20,11 @@ def make_shell_context():
         'AssignmentSubmission': AssignmentSubmission,
         'Message': Message,
         'Notification': Notification,
+        'Conversation': Conversation,
         'Discussion': Discussion,
-        'DiscussionPost': DiscussionPost
+        'DiscussionPost': DiscussionPost,
+        'Admin': Admin,
+        'Announcement': Announcement
     }
 
 if __name__ == '__main__':

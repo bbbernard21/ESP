@@ -5,6 +5,8 @@ from flask_mail import Mail
 from flask_migrate import Migrate
 from config import Config
 import os
+import timeago
+from datetime import datetime
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -27,6 +29,13 @@ def create_app(config_class=Config):
     # Create upload directories
     os.makedirs(os.path.join(app.instance_path, 'uploads'), exist_ok=True)
     os.makedirs(os.path.join(app.instance_path, 'uploads', 'submissions'), exist_ok=True)
+
+    # Register timeago filter
+    @app.template_filter('timeago')
+    def timeago_filter(timestamp):
+        if not timestamp:
+            return ''
+        return timeago.format(timestamp, datetime.utcnow())
 
     with app.app_context():
         # Import models to ensure they are known to Flask-Migrate

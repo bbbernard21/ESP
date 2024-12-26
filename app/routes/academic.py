@@ -58,25 +58,46 @@ def course_detail(course_id):
 def goals():
     if request.method == 'POST':
         try:
+            # Print form data for debugging
+            print("Form data:", request.form)
+            
             target_grade = float(request.form['target_grade'])
             if target_grade < 0 or target_grade > 4:
                 flash('Target grade must be between 0 and 4.', 'error')
                 return redirect(url_for('academic.goals'))
 
+            course = Course.query.get_or_404(request.form['course_id'])
+            print(f"Found course: {course.code} - {course.name}")
+            
+            title = f"Achieve {target_grade} in {course.code}"
+            print(f"Creating goal with title: {title}")
+
             goal = AcademicGoal(
                 student_id=current_user.id,
-                course_id=request.form['course_id'],
+                course_id=course.id,
+                title=title,
                 target_grade=target_grade,
                 description=request.form['description'],
-                deadline=datetime.utcnow() + timedelta(days=90),  # Default deadline of 90 days
+                target_date=datetime.utcnow() + timedelta(days=90),  # Default deadline of 90 days
                 status='active'
             )
+            print("Created goal object")
+            
             db.session.add(goal)
+            print("Added goal to session")
+            
             db.session.commit()
+            print("Committed goal to database")
+            
             flash('Academic goal has been set!', 'success')
-        except ValueError:
+        except ValueError as ve:
+            print(f"ValueError: {str(ve)}")
             flash('Invalid target grade value.', 'error')
         except Exception as e:
+            import traceback
+            print(f"Error setting goal: {str(e)}")
+            print("Traceback:")
+            print(traceback.format_exc())
             flash('An error occurred while setting the goal.', 'error')
             db.session.rollback()
         return redirect(url_for('academic.goals'))

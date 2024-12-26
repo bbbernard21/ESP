@@ -1,300 +1,272 @@
 from app import create_app, db
-from app.models.user import User
-from app.models.academic import Course, AcademicRecord, AcademicGoal, CourseMaterial, Program, Assignment, AssignmentSubmission, Exam, ExamGrade
-from app.models.communication import Message, Notification, Discussion, DiscussionPost
+from app.models.user import User, UserRole
+from app.models.academic import (
+    Program, Course, AcademicRecord, AcademicGoal, 
+    CourseMaterial, Assignment, AssignmentSubmission,
+    Exam
+)
+from app.models.communication import (
+    Message, Notification, Discussion, DiscussionPost,
+    Announcement, Conversation
+)
 from datetime import datetime, timedelta
-from app.models.user import UserRole
+from werkzeug.security import generate_password_hash
 
 def seed_database():
-    # Create programs first
-    programs = [
+    # Create programs
+    programs_data = [
         {
-            'code': 'CS',
             'name': 'Computer Science',
-            'description': 'Study of computation, automation, and information.'
+            'code': 'CS',
+            'description': 'Bachelor of Science in Computer Science'
         },
         {
-            'code': 'MATH',
-            'name': 'Mathematics',
-            'description': 'Study of numbers, quantities, and shapes.'
-        },
-        {
-            'code': 'ENG',
-            'name': 'English',
-            'description': 'Study of literature, writing, and communication.'
-        },
-        {
-            'code': 'PHYS',
-            'name': 'Physics',
-            'description': 'Study of matter, energy, and their interactions.'
+            'name': 'Information Technology',
+            'code': 'IT',
+            'description': 'Bachelor of Science in Information Technology'
         }
     ]
-
-    created_programs = []
-    for program_data in programs:
+    
+    for program_data in programs_data:
         program = Program(**program_data)
         db.session.add(program)
-        created_programs.append(program)
     
     db.session.commit()
-
-    # Create test users with program assignments for students
-    users = [
+    
+    # Create users
+    users_data = [
         {
-            'username': 'student1',
-            'email': 'student1@example.com',
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'password': 'password123',
-            'role': UserRole.STUDENT.value,
-            'is_active': True,
-            'last_login': datetime.utcnow(),
-            'program_id': created_programs[0].id  # CS program
-        },
-        {
-            'username': 'student2',
-            'email': 'student2@example.com',
-            'first_name': 'Jane',
-            'last_name': 'Smith',
-            'password': 'password123',
-            'role': UserRole.STUDENT.value,
-            'is_active': True,
-            'last_login': datetime.utcnow(),
-            'program_id': created_programs[1].id  # MATH program
+            'username': 'admin',
+            'email': 'admin@example.com',
+            'password_hash': generate_password_hash('admin123'),
+            'first_name': 'Admin',
+            'last_name': 'User',
+            'role': UserRole.ADMIN,
+            'is_active': True
         },
         {
             'username': 'professor1',
             'email': 'professor1@example.com',
-            'first_name': 'Robert',
-            'last_name': 'Johnson',
-            'password': 'password123',
-            'role': UserRole.PROFESSOR.value,
-            'is_active': True,
-            'last_login': datetime.utcnow()
+            'password_hash': generate_password_hash('prof123'),
+            'first_name': 'John',
+            'last_name': 'Smith',
+            'role': UserRole.PROFESSOR,
+            'is_active': True
         },
         {
-            'username': 'admin',
-            'email': 'admin@example.com',
-            'first_name': 'Admin',
-            'last_name': 'User',
-            'password': 'admin123',
-            'role': UserRole.ADMIN.value,
-            'is_active': True,
-            'last_login': datetime.utcnow()
+            'username': 'student1',
+            'email': 'student1@example.com',
+            'password_hash': generate_password_hash('student123'),
+            'first_name': 'Alice',
+            'last_name': 'Johnson',
+            'role': UserRole.STUDENT,
+            'program_id': 1,
+            'is_active': True
         }
     ]
-
-    created_users = []
-    for user_data in users:
-        password = user_data.pop('password')
+    
+    for user_data in users_data:
         user = User(**user_data)
-        user.set_password(password)
         db.session.add(user)
-        created_users.append(user)
     
     db.session.commit()
-
-    # Create courses with program assignments
-    courses = [
+    
+    # Create courses
+    courses_data = [
         {
             'code': 'CS101',
             'name': 'Introduction to Programming',
             'description': 'Basic programming concepts using Python',
             'credits': 3,
-            'program': created_programs[0],  # CS program
-            'professor': created_users[2],  # professor1
-            'assignments_weight': 40.0,
-            'midterm_weight': 25.0,
-            'final_weight': 35.0,
+            'professor_id': 2,  # professor1
+            'program_id': 1,
             'semester': 'Fall',
-            'status': 'active'
+            'assignments_weight': 40,
+            'midterm_weight': 25,
+            'final_weight': 35
         },
         {
             'code': 'CS102',
             'name': 'Data Structures',
             'description': 'Fundamental data structures and algorithms',
             'credits': 3,
-            'program': created_programs[0],  # CS program
-            'professor': created_users[2],  # professor1
-            'assignments_weight': 40.0,
-            'midterm_weight': 25.0,
-            'final_weight': 35.0,
+            'professor_id': 2,  # professor1
+            'program_id': 1,
             'semester': 'Fall',
-            'status': 'active'
-        },
-        {
-            'code': 'MATH101',
-            'name': 'Calculus I',
-            'description': 'Limits, derivatives, and integrals',
-            'credits': 4,
-            'program': created_programs[1],  # MATH program
-            'professor': created_users[2],  # professor1
-            'assignments_weight': 40.0,
-            'midterm_weight': 25.0,
-            'final_weight': 35.0,
-            'semester': 'Fall',
-            'status': 'active'
-        },
-        {
-            'code': 'PHYS101',
-            'name': 'Physics I',
-            'description': 'Mechanics and thermodynamics',
-            'credits': 4,
-            'program': created_programs[3],  # PHYS program
-            'professor': created_users[2],  # professor1
-            'assignments_weight': 40.0,
-            'midterm_weight': 25.0,
-            'final_weight': 35.0,
-            'semester': 'Fall',
-            'status': 'active'
+            'assignments_weight': 40,
+            'midterm_weight': 25,
+            'final_weight': 35
         }
     ]
-
-    created_courses = []
-    for course_data in courses:
-        program = course_data.pop('program')
-        professor = course_data.pop('professor')
+    
+    for course_data in courses_data:
         course = Course(**course_data)
-        course.program = program
-        course.professor = professor
         db.session.add(course)
-        created_courses.append(course)
     
     db.session.commit()
-
-    # Create academic records based on program enrollment
-    current_year = datetime.utcnow().year
-    academic_year = f"{current_year}-{current_year+1}"
-    current_month = datetime.utcnow().month
-    semester = 'Fall' if 8 <= current_month <= 12 else 'Spring' if 1 <= current_month <= 5 else 'Summer'
-
-    for student in created_users[:2]:  # First two users are students
-        # Get courses for student's program
-        program_courses = [c for c in created_courses if c.program_id == student.program_id]
-        for course in program_courses:
-            record = AcademicRecord(
-                student_id=student.id,
-                course_id=course.id,
-                grade=None,  # Initialize with no grade
-                status='enrolled',
-                enrollment_date=datetime.utcnow(),
-                semester=semester,
-                academic_year=academic_year
-            )
-            db.session.add(record)
-
-    db.session.commit()
-
-    # Create academic goals for enrolled courses
-    for student in created_users[:2]:
-        program_courses = [c for c in created_courses if c.program_id == student.program_id]
-        for course in program_courses:
-            goal = AcademicGoal(
-                student_id=student.id,
-                course_id=course.id,
-                title=f'Get an A in {course.name}',
-                description=f'Aim to achieve an A in {course.name}',
-                target_date=datetime.utcnow() + timedelta(days=90),
-                status='active'
-            )
-            db.session.add(goal)
-
-    db.session.commit()
-
-    # Create course materials
-    material_types = ['lecture', 'assignment', 'reading']
-    for course in created_courses:
-        for i, material_type in enumerate(material_types):
-            material = CourseMaterial(
-                course_id=course.id,
-                title=f'{material_type.title()} {i+1} - {course.name}',
-                description=f'Material for {course.name}',
-                file_path=f'/materials/{course.code}/{material_type}_{i+1}.pdf',
-                material_type=material_type
-            )
-            db.session.add(material)
-
-    db.session.commit()
-
-    # Create assignments
-    assignments = [
+    
+    # Create academic records
+    academic_records_data = [
         {
-            'title': 'Midterm Project',
-            'description': 'Individual project implementing core concepts',
-            'total_points': 100,
-            'weight': 30,  # 30% of course grade
-            'due_date': datetime.utcnow() + timedelta(days=30)
+            'student_id': 3,  # student1
+            'course_id': 1,  # CS101
+            'status': 'enrolled',
+            'semester': 'Fall',
+            'academic_year': '2023-2024'
         },
         {
-            'title': 'Final Assignment',
-            'description': 'Comprehensive assignment covering all topics',
-            'total_points': 100,
-            'weight': 40,  # 40% of course grade
-            'due_date': datetime.utcnow() + timedelta(days=60)
+            'student_id': 3,  # student1
+            'course_id': 2,  # CS102
+            'status': 'enrolled',
+            'semester': 'Fall',
+            'academic_year': '2023-2024'
         }
     ]
-
-    for course in created_courses:
-        for assignment_data in assignments:
-            assignment = Assignment(
-                course_id=course.id,
-                **assignment_data
-            )
-            db.session.add(assignment)
-            db.session.commit()  # Commit the assignment first
-            
-            # Create submissions only for enrolled students
-            enrolled_students = [
-                record.student for record in course.academic_records
-                if record.status == 'enrolled'
-            ]
-            
-            for student in enrolled_students:
-                submission = AssignmentSubmission(
-                    assignment_id=assignment.id,
-                    student_id=student.id,
-                    grade=85.0,
-                    feedback='Good work, but could improve documentation',
-                    status='graded',
-                    submitted_at=datetime.utcnow() - timedelta(days=2),
-                    graded_at=datetime.utcnow() - timedelta(days=1)
-                )
-                db.session.add(submission)
-
+    
+    for record_data in academic_records_data:
+        record = AcademicRecord(**record_data)
+        db.session.add(record)
+    
     db.session.commit()
-
-    # Create exams for each course
-    exam_types = ['Midterm', 'Final']
-    for course in created_courses:
-        for exam_type in exam_types:
-            exam = Exam(
-                course_id=course.id,
-                title=f'{exam_type} Exam - {course.name}',
-                description=f'{exam_type} examination for {course.name}',
-                total_points=100,
-                exam_date=datetime.utcnow() + timedelta(days=45 if exam_type == 'Midterm' else 90),
-                duration=180,  # 3 hours in minutes
-                weight=25.0 if exam_type == 'Midterm' else 35.0
-            )
-            db.session.add(exam)
-            db.session.commit()  # Commit to get exam.id
-            
-            # Create exam grades for enrolled students
-            enrolled_students = [
-                record.student for record in course.academic_records
-                if record.status == 'enrolled'
-            ]
-            
-            for student in enrolled_students:
-                exam_grade = ExamGrade(
-                    exam_id=exam.id,
-                    student_id=student.id,
-                    grade=88.0,
-                    feedback='Good understanding of concepts',
-                    graded_at=datetime.utcnow()
-                )
-                db.session.add(exam_grade)
-
+    
+    # Create academic goals
+    goals_data = [
+        {
+            'student_id': 3,  # student1
+            'course_id': 1,  # CS101
+            'title': 'Improve Programming Skills',
+            'description': 'Master basic Python programming concepts',
+            'target_grade': 3.5,
+            'target_date': datetime.utcnow() + timedelta(days=90)
+        }
+    ]
+    
+    for goal_data in goals_data:
+        goal = AcademicGoal(**goal_data)
+        db.session.add(goal)
+    
+    db.session.commit()
+    
+    # Create course materials
+    materials_data = [
+        {
+            'course_id': 1,  # CS101
+            'title': 'Python Basics',
+            'description': 'Introduction to Python syntax and basic concepts',
+            'material_type': 'lecture'
+        },
+        {
+            'course_id': 1,  # CS101
+            'title': 'Control Structures',
+            'description': 'If statements, loops, and control flow',
+            'material_type': 'lecture'
+        }
+    ]
+    
+    for material_data in materials_data:
+        material = CourseMaterial(**material_data)
+        db.session.add(material)
+    
+    db.session.commit()
+    
+    # Create assignments
+    assignments_data = [
+        {
+            'course_id': 1,  # CS101
+            'title': 'Python Basics Assignment',
+            'description': 'Practice basic Python syntax',
+            'due_date': datetime.utcnow() + timedelta(days=7),
+            'total_points': 100,
+            'weight': 20
+        }
+    ]
+    
+    for assignment_data in assignments_data:
+        assignment = Assignment(**assignment_data)
+        db.session.add(assignment)
+    
+    db.session.commit()
+    
+    # Create exams
+    exams_data = [
+        {
+            'course_id': 1,  # CS101
+            'title': 'Midterm Exam',
+            'description': 'Covers Python basics and control structures',
+            'exam_date': datetime.utcnow() + timedelta(days=30),
+            'duration': 120,  # minutes
+            'total_points': 100,
+            'weight': 25.0  # 25% of course grade
+        }
+    ]
+    
+    for exam_data in exams_data:
+        exam = Exam(**exam_data)
+        db.session.add(exam)
+    
+    db.session.commit()
+    
+    # Create discussions
+    discussions_data = [
+        {
+            'title': 'Python Help',
+            'description': 'Get help with Python programming',
+            'course_id': 1,  # CS101
+            'created_by': 3  # student1
+        }
+    ]
+    
+    for discussion_data in discussions_data:
+        discussion = Discussion(**discussion_data)
+        db.session.add(discussion)
+    
+    db.session.commit()
+    
+    # Create discussion posts
+    posts_data = [
+        {
+            'content': 'I need help with Python loops',
+            'discussion_id': 1,
+            'author_id': 3  # student1
+        }
+    ]
+    
+    for post_data in posts_data:
+        post = DiscussionPost(**post_data)
+        db.session.add(post)
+    
+    db.session.commit()
+    
+    # Create announcements
+    announcements_data = [
+        {
+            'title': 'Welcome to CS101',
+            'content': 'Welcome to Introduction to Programming!',
+            'course_id': 1,  # CS101
+            'created_by': 2  # professor1
+        }
+    ]
+    
+    for announcement_data in announcements_data:
+        announcement = Announcement(**announcement_data)
+        db.session.add(announcement)
+    
+    db.session.commit()
+    
+    # Create notifications
+    notifications_data = [
+        {
+            'user_id': 3,  # student1
+            'title': 'New Assignment',
+            'body': 'A new assignment has been posted in CS101',
+            'category': 'academic'
+        }
+    ]
+    
+    for notification_data in notifications_data:
+        notification = Notification(**notification_data)
+        db.session.add(notification)
+    
     db.session.commit()
 
 if __name__ == '__main__':

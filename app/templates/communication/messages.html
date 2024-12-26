@@ -1,109 +1,314 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <!-- Messages List -->
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#inbox">Inbox</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#sent">Sent</a>
-                    </li>
-                </ul>
+<div class="row g-0">
+    <!-- Conversations List -->
+    <div class="col-md-4 border-end">
+        <div class="d-flex flex-column h-100">
+            <div class="p-3 border-bottom">
+                <h5 class="mb-0">Messages</h5>
             </div>
-            <div class="card-body">
-                <div class="tab-content">
-                    <!-- Inbox -->
-                    <div class="tab-pane fade show active" id="inbox">
-                        {% if messages_received %}
-                        <div class="list-group">
-                            {% for message in messages_received %}
-                            <div class="list-group-item list-group-item-action {{ 'unread' if not message.read }}">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">From: {{ message.sender.username }}</h6>
-                                    <small class="text-muted">{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
-                                </div>
-                                <p class="mb-1">{{ message.body }}</p>
-                                {% if not message.read %}
-                                <small class="text-primary">Unread</small>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% else %}
-                        <p class="text-muted">No messages in inbox.</p>
-                        {% endif %}
-                    </div>
+            
+            <!-- Search -->
+            <div class="p-3 border-bottom">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search messages..." id="messageSearch">
+                    <button class="btn btn-outline-primary" type="button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
 
-                    <!-- Sent Messages -->
-                    <div class="tab-pane fade" id="sent">
-                        {% if messages_sent %}
-                        <div class="list-group">
-                            {% for message in messages_sent %}
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">To: {{ message.recipient.username }}</h6>
-                                    <small class="text-muted">{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
-                                </div>
-                                <p class="mb-1">{{ message.body }}</p>
-                                {% if message.read %}
-                                <small class="text-success">Read {{ message.read_timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
-                                {% else %}
-                                <small class="text-muted">Not read yet</small>
-                                {% endif %}
+            <!-- Conversations -->
+            <div class="conversations-list overflow-auto flex-grow-1">
+                {% for conversation in conversations %}
+                <div class="conversation-item p-3 border-bottom {% if conversation.unread %}unread{% endif %}" 
+                     data-conversation-id="{{ conversation.id }}"
+                     onclick="loadConversation('{{ conversation.id }}')">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="avatar">
+                                <i class="fas fa-user-circle fa-2x"></i>
                             </div>
-                            {% endfor %}
                         </div>
-                        {% else %}
-                        <p class="text-muted">No sent messages.</p>
-                        {% endif %}
+                        <div class="flex-grow-1 ms-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">{{ conversation.other_user.username }}</h6>
+                                <small class="text-muted">{{ conversation.last_message.timestamp|timeago }}</small>
+                            </div>
+                            <p class="text-muted mb-0 text-truncate">
+                                {% if conversation.last_message %}
+                                    {{ conversation.last_message.body }}
+                                {% endif %}
+                            </p>
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 
-    <!-- New Message Form -->
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">New Message</h5>
+    <!-- Message Thread -->
+    <div class="col-md-8">
+        <div class="d-flex flex-column h-100">
+            <!-- Thread Header -->
+            <div class="p-3 border-bottom" id="threadHeader">
+                <div class="d-flex align-items-center">
+                    <div class="avatar me-3">
+                        <i class="fas fa-user-circle fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0" id="threadRecipient"></h6>
+                        <small class="text-muted" id="threadStatus"></small>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('communication.send_message') }}">
-                    <div class="mb-3">
-                        <label for="recipient" class="form-label">To</label>
-                        <input type="text" class="form-control" id="recipient" name="recipient" 
-                               placeholder="Enter username" required>
+
+            <!-- Messages -->
+            <div class="flex-grow-1 overflow-auto p-3" id="messageThread">
+                <div class="message-group">
+                    <div class="message-date-separator">
+                        <span>Today</span>
                     </div>
-                    <div class="mb-3">
-                        <label for="message" class="form-label">Message</label>
-                        <textarea class="form-control" id="message" name="message" rows="4" 
-                                  maxlength="1000" required
-                                  onkeyup="updateMessageCounter(this)"></textarea>
-                        <small id="message-counter" class="form-text text-muted">1000 characters remaining</small>
+                    {% for message in messages %}
+                    <div class="message mb-3 {% if message.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+                        <div class="message-content">
+                            {{ message.body }}
+                            <div class="message-meta">
+                                <small class="text-muted">{{ message.timestamp.strftime('%H:%M') }}</small>
+                                {% if message.sender_id == current_user.id %}
+                                    {% if message.read %}
+                                    <i class="fas fa-check-double text-primary"></i>
+                                    {% else %}
+                                    <i class="fas fa-check"></i>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary">Send Message</button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Message Input -->
+            <div class="p-3 border-top">
+                <form id="messageForm" class="message-form">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="messageInput" 
+                               placeholder="Type a message..." autocomplete="off">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block styles %}
+<style>
+.conversations-list {
+    height: calc(100vh - 200px);
+}
+
+.conversation-item {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.conversation-item:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.conversation-item.active {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.conversation-item.unread h6 {
+    font-weight: bold;
+}
+
+#messageThread {
+    height: calc(100vh - 270px);
+}
+
+.message {
+    max-width: 75%;
+    margin-bottom: 1rem;
+}
+
+.message.sent {
+    margin-left: auto;
+}
+
+.message-content {
+    padding: 0.75rem;
+    border-radius: 1rem;
+    position: relative;
+}
+
+.message.sent .message-content {
+    background-color: #0d6efd;
+    color: white;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.message.received .message-content {
+    background-color: #f8f9fa;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.message-meta {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    text-align: right;
+}
+
+.message.sent .message-meta {
+    color: white;
+}
+
+.message-date-separator {
+    text-align: center;
+    margin: 1rem 0;
+    position: relative;
+}
+
+.message-date-separator:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 1px;
+    background: #dee2e6;
+    z-index: 1;
+}
+
+.message-date-separator span {
+    background: white;
+    padding: 0 1rem;
+    color: #6c757d;
+    position: relative;
+    z-index: 2;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Bootstrap tabs
-    var triggerTabList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tab"]'));
-    triggerTabList.forEach(function(triggerEl) {
-        new bootstrap.Tab(triggerEl);
+let currentConversation = null;
+let lastMessageTime = null;
+
+function loadConversation(conversationId) {
+    // Update active state
+    document.querySelectorAll('.conversation-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelector(`[data-conversation-id="${conversationId}"]`).classList.add('active');
+    
+    // Load messages
+    fetch(`/api/messages/${conversationId}`)
+        .then(response => response.json())
+        .then(data => {
+            currentConversation = conversationId;
+            updateThread(data);
+        });
+}
+
+function updateThread(data) {
+    const thread = document.getElementById('messageThread');
+    const recipient = document.getElementById('threadRecipient');
+    const status = document.getElementById('threadStatus');
+    
+    recipient.textContent = data.recipient;
+    status.textContent = data.online ? 'Active Now' : 'Offline';
+    
+    // Group messages by date
+    const messagesByDate = groupMessagesByDate(data.messages);
+    
+    // Render messages
+    thread.innerHTML = messagesByDate.map(group => `
+        <div class="message-group">
+            <div class="message-date-separator">
+                <span>${group.date}</span>
+            </div>
+            ${group.messages.map(message => `
+                <div class="message ${message.sender_id === currentUser.id ? 'sent' : 'received'}">
+                    <div class="message-content">
+                        ${message.body}
+                        <div class="message-meta">
+                            ${message.timestamp}
+                            ${message.sender_id === currentUser.id ? `
+                                <i class="fas fa-${message.read ? 'check-double text-primary' : 'check'}"></i>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `).join('');
+    
+    thread.scrollTop = thread.scrollHeight;
+}
+
+function groupMessagesByDate(messages) {
+    // Implementation of message grouping by date
+    return messages.reduce((groups, message) => {
+        const date = new Date(message.timestamp).toLocaleDateString();
+        const group = groups.find(g => g.date === date);
+        if (group) {
+            group.messages.push(message);
+        } else {
+            groups.push({ date, messages: [message] });
+        }
+        return groups;
+    }, []);
+}
+
+document.getElementById('messageForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (!currentConversation) return;
+    
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    if (!message) return;
+    
+    // Send message
+    fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            conversation_id: currentConversation,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            loadConversation(currentConversation);
+        }
     });
 });
+
+// Poll for new messages
+setInterval(() => {
+    if (currentConversation) {
+        fetch(`/api/messages/${currentConversation}/new${lastMessageTime ? `?after=${lastMessageTime}` : ''}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.messages.length > 0) {
+                    updateThread(data);
+                    lastMessageTime = data.messages[data.messages.length - 1].timestamp;
+                }
+            });
+    }
+}, 5000);
 </script>
 {% endblock %} 

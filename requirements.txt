@@ -10,4 +10,5 @@ email-validator==2.0.0
 Flask-Migrate==4.0.5
 PyJWT==2.8.0
 bcrypt==4.0.1
-python-dateutil==2.8.2 
+python-dateutil==2.8.2
+timeago==1.0.16 

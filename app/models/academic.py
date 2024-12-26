@@ -62,6 +62,7 @@ class AcademicGoal(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
+    target_grade = db.Column(db.Float)
     target_date = db.Column(db.DateTime)
     status = db.Column(db.String(20), default='active')  # active, completed, cancelled
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

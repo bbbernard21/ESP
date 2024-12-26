@@ -8,9 +8,10 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 @main.route('/index')
-@login_required
 def index():
-    """Redirect to appropriate dashboard based on user role."""
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+    
     if current_user.is_admin:
         return redirect(url_for('admin.dashboard'))
     elif current_user.is_professor:

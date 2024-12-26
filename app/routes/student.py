@@ -153,7 +153,8 @@ def dashboard():
                          enrolled_courses=enrolled_courses,
                          pending_tasks=pending_tasks,
                          achievements=achievements,
-                         recent_activities=recent_activities)
+                         recent_activities=recent_activities,
+                         now=datetime.utcnow())
 
 @student.route('/student/course/<int:course_id>')
 @login_required
@@ -371,4 +372,28 @@ def analytics():
     
     return render_template('student/analytics.html',
                          title='Performance Analytics',
-                         course_stats=course_stats) 
+                         course_stats=course_stats)
+
+@student.route('/student/exam/<int:exam_id>')
+@login_required
+@student_required
+def view_exam(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    
+    # Verify enrollment
+    enrollment = AcademicRecord.query.filter_by(
+        student_id=current_user.id,
+        course_id=exam.course_id,
+        status='enrolled'
+    ).first_or_404()
+    
+    # Get student's grade if exam is graded
+    grade = ExamGrade.query.filter_by(
+        exam_id=exam_id,
+        student_id=current_user.id
+    ).first()
+    
+    return render_template('student/view_exam.html',
+                         title='View Exam',
+                         exam=exam,
+                         grade=grade) 
