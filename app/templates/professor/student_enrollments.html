@@ -1,0 +1,92 @@
+{% extends "professor/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Student Enrollments</h1>
+    
+    {% for course in courses %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>{{ course.name }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Enrolled Students</h4>
+                <button class="btn btn-primary" onclick="exportEnrollmentData('{{ course.id }}')">
+                    <i class="fas fa-download"></i> Export Data
+                </button>
+            </div>
+            
+            {% if course.academic_records %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Enrollment Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in course.academic_records %}
+                        <tr>
+                            <td>{{ record.student.first_name }} {{ record.student.last_name }}</td>
+                            <td>{{ record.student.email }}</td>
+                            <td>{{ record.enrollment_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if record.status == 'enrolled' else 'warning' }}">
+                                    {{ record.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('professor.student_progress_detail', course_id=course.id, student_id=record.student.id) }}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-chart-line"></i> Progress
+                                </a>
+                                <button class="btn btn-sm btn-danger" onclick="updateEnrollmentStatus('{{ record.id }}')">
+                                    <i class="fas fa-user-times"></i> Unenroll
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No students enrolled yet.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function exportEnrollmentData(courseId) {
+    window.location.href = `/professor/course/${courseId}/enrollments/export`;
+}
+
+function updateEnrollmentStatus(recordId) {
+    if (confirm('Are you sure you want to unenroll this student?')) {
+        fetch(`/professor/enrollment/${recordId}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: 'inactive'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating enrollment status');
+            }
+        });
+    }
+}
+</script>
+{% endblock %} 

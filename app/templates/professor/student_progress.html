@@ -1,0 +1,124 @@
+{% extends "professor/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Student Progress</h1>
+    
+    {% for course in courses %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>{{ course.name }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Student Performance</h4>
+                <button class="btn btn-primary" onclick="exportProgressData('{{ course.id }}')">
+                    <i class="fas fa-download"></i> Export Data
+                </button>
+            </div>
+            
+            {% if course.academic_records %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Overall Grade</th>
+                            <th>Assignments</th>
+                            <th>Quizzes</th>
+                            <th>Exams</th>
+                            <th>Attendance</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in course.academic_records %}
+                        <tr>
+                            <td>{{ record.student.first_name }} {{ record.student.last_name }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if record.grade >= 70 else 'warning' }}">
+                                    {{ record.grade }}%
+                                </span>
+                            </td>
+                            <td>{{ record.assignment_completion_rate }}%</td>
+                            <td>{{ record.quiz_completion_rate }}%</td>
+                            <td>{{ record.exam_completion_rate }}%</td>
+                            <td>{{ record.attendance_rate }}%</td>
+                            <td>
+                                <a href="{{ url_for('professor.student_progress_detail', course_id=course.id, student_id=record.student.id) }}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-chart-line"></i> Details
+                                </a>
+                                <button class="btn btn-sm btn-primary" onclick="showGoalsModal('{{ record.student.id }}', '{{ course.id }}')">
+                                    <i class="fas fa-bullseye"></i> Goals
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No students enrolled in this course.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Goals Modal -->
+<div class="modal fade" id="goalsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Student Goals</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="studentGoals"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportProgressData(courseId) {
+    window.location.href = `/professor/course/${courseId}/progress/export`;
+}
+
+function showGoalsModal(studentId, courseId) {
+    $.ajax({
+        url: '/professor/student/' + studentId + '/course/' + courseId + '/goals',
+        method: 'GET',
+        success: function(data) {
+            var goalsHtml = $('<ul>').addClass('list-group');
+            
+            $.each(data.goals, function(i, goal) {
+                var progressBar = $('<div>').addClass('progress-bar')
+                    .attr('role', 'progressbar')
+                    .attr('style', 'width: ' + goal.progress + '%')
+                    .attr('aria-valuenow', goal.progress)
+                    .attr('aria-valuemin', 0)
+                    .attr('aria-valuemax', 100)
+                    .text(goal.progress + '%');
+                    
+                var progress = $('<div>').addClass('progress').append(progressBar);
+                
+                var item = $('<li>').addClass('list-group-item')
+                    .append($('<h6>').text(goal.title))
+                    .append($('<p>').text(goal.description))
+                    .append(progress);
+                    
+                goalsHtml.append(item);
+            });
+            
+            $('#studentGoals').empty().append(goalsHtml);
+            $('#goalsModal').modal('show');
+        }
+    });
+}
+</script>
+{% endblock %} 

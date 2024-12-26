@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('professor.dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ course.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Course Info -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Course Information</h3>
+                </div>
+                <div class="card-body">
+                    <h4>{{ course.name }}</h4>
+                    <h6 class="text-muted">{{ course.code }}</h6>
+                    <p>{{ course.description }}</p>
+                    <p><strong>Credits:</strong> {{ course.credits }}</p>
+                    <p><strong>Semester:</strong> {{ course.semester }}</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Quick Actions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('professor.create_assignment', course_id=course.id) }}" class="btn btn-primary">Create Assignment</a>
+                        <a href="{{ url_for('professor.create_exam', course_id=course.id) }}" class="btn btn-info">Create Exam</a>
+                        <a href="{{ url_for('professor.upload_material', course_id=course.id) }}" class="btn btn-success">Upload Material</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Enrolled Students -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Enrolled Students</h3>
+                </div>
+                <div class="card-body">
+                    {% if enrolled_students %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in enrolled_students %}
+                                        <tr>
+                                            <td>{{ student.full_name }}</td>
+                                            <td>{{ student.email }}</td>
+                                            <td>
+                                                <a href="#" class="btn btn-sm btn-info">View Progress</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No students enrolled yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Assignments -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Assignments</h3>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Due Date</th>
+                                        <th>Total Points</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in assignments %}
+                                        <tr>
+                                            <td>{{ assignment.title }}</td>
+                                            <td>{{ assignment.due_date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ assignment.total_points }}</td>
+                                            <td>
+                                                <a href="#" class="btn btn-sm btn-primary">View Submissions</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No assignments created yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Exams -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Exams</h3>
+                </div>
+                <div class="card-body">
+                    {% if exams %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Date</th>
+                                        <th>Duration</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for exam in exams %}
+                                        <tr>
+                                            <td>{{ exam.title }}</td>
+                                            <td>{{ exam.exam_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>{{ exam.duration }} minutes</td>
+                                            <td>
+                                                <a href="#" class="btn btn-sm btn-primary">View Grades</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No exams created yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Course Materials -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Course Materials</h3>
+                </div>
+                <div class="card-body">
+                    {% if materials %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Type</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for material in materials %}
+                                        <tr>
+                                            <td>{{ material.title }}</td>
+                                            <td>{{ material.material_type }}</td>
+                                            <td>
+                                                <a href="#" class="btn btn-sm btn-info">View</a>
+                                                <a href="#" class="btn btn-sm btn-danger">Delete</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No materials uploaded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

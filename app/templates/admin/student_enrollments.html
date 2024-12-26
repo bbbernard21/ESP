@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Enrollments for {{ student.first_name }} {{ student.last_name }}</h2>
+            <p class="text-muted">Student ID: {{ student.id }} | Username: {{ student.username }}</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('admin.enroll_student') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Enrollment
+            </a>
+        </div>
+    </div>
+
+    {% if enrollments %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Program</th>
+                            <th>Semester</th>
+                            <th>Academic Year</th>
+                            <th>Status</th>
+                            <th>Grade</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enrollment in enrollments %}
+                        <tr>
+                            <td>{{ enrollment.course.code }}</td>
+                            <td>{{ enrollment.course.name }}</td>
+                            <td>{{ enrollment.course.program.name }}</td>
+                            <td>{{ enrollment.semester }}</td>
+                            <td>{{ enrollment.academic_year }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if enrollment.status == 'completed' else 'warning' }}">
+                                    {{ enrollment.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ enrollment.grade if enrollment.grade else 'N/A' }}</td>
+                            <td>
+                                <form action="{{ url_for('admin.unenroll_student', student_id=student.id, course_id=enrollment.course.id) }}" 
+                                      method="POST" style="display: inline;"
+                                      onsubmit="return confirm('Are you sure you want to unenroll the student from this course?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i> Unenroll
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No enrollments found for this student.
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Users
+        </a>
+    </div>
+</div>
+{% endblock %} 

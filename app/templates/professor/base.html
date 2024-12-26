@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('professor.dashboard') }}">Professor Portal</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('professor.dashboard') }}">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                </li>
+                
+                <!-- Course Management -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-chalkboard-teacher"></i> Course Management
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('professor.course_materials') }}">Course Materials</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.student_enrollments') }}">Student Enrollments</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.course_schedule') }}">Course Schedule</a></li>
+                    </ul>
+                </li>
+
+                <!-- Assessments -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-tasks"></i> Assessments
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('professor.assignments') }}">Assignments</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.quizzes') }}">Quizzes</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.exams') }}">Exams</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.grade_submissions') }}">Grade Submissions</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.reevaluation_requests') }}">Re-evaluation Requests</a></li>
+                    </ul>
+                </li>
+
+                <!-- Student Progress -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-chart-line"></i> Student Progress
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('professor.student_progress') }}">Progress Tracking</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.engagement_metrics') }}">Engagement Metrics</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.analytics') }}">Analytics & Reports</a></li>
+                    </ul>
+                </li>
+
+                <!-- Communication -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-comments"></i> Communication
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('professor.announcements') }}">Announcements</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.send_notifications') }}">Send Notifications</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.messages') }}">Messages</a></li>
+                    </ul>
+                </li>
+
+                <!-- Resources -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-book"></i> Resources
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('professor.teaching_resources') }}">Teaching Resources</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.academic_calendar') }}">Academic Calendar</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('professor.help') }}">Help & Support</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <!-- User Menu -->
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user"></i> {{ current_user.full_name }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">Profile</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.settings') }}">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% endblock %} 

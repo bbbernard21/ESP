@@ -1,0 +1,53 @@
+{% extends "professor/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Grade Assignment Submission</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Assignment Details</h5>
+                        <p><strong>Course:</strong> {{ submission.assignment.course.name }}</p>
+                        <p><strong>Assignment:</strong> {{ submission.assignment.title }}</p>
+                        <p><strong>Student:</strong> {{ submission.student.first_name }} {{ submission.student.last_name }}</p>
+                        <p><strong>Submitted:</strong> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        {% if submission.is_late() %}
+                            <p class="text-danger">This submission is late</p>
+                        {% endif %}
+                    </div>
+
+                    {% if submission.submission_file %}
+                    <div class="mb-4">
+                        <h5>Submission File</h5>
+                        <a href="{{ url_for('download_file', filename=submission.submission_file) }}" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Download Submission
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST">
+                        <div class="form-group mb-3">
+                            <label for="grade">Grade (out of {{ submission.assignment.total_points }})</label>
+                            <input type="number" class="form-control" id="grade" name="grade" 
+                                   step="0.1" min="0" max="{{ submission.assignment.total_points }}" 
+                                   value="{{ submission.grade or '' }}" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="feedback">Feedback</label>
+                            <textarea class="form-control" id="feedback" name="feedback" rows="4">{{ submission.feedback or '' }}</textarea>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('professor.grade_submissions') }}" class="btn btn-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">Submit Grade</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('professor.dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('professor.course_details', course_id=exam.course_id) }}">{{ exam.course.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Grade Exam</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Exam Details</h3>
+                </div>
+                <div class="card-body">
+                    <h4>{{ exam.title }}</h4>
+                    <p class="text-muted">{{ exam.description }}</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Total Points:</strong> {{ exam.total_points }}</p>
+                            <p><strong>Exam Type:</strong> {{ exam.exam_type.title() }}</p>
+                            <p><strong>Duration:</strong> {{ exam.duration }} minutes</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Student:</strong> {{ student.full_name }}</p>
+                            <p><strong>Exam Date:</strong> {{ exam.exam_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Grade Exam</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="grade" class="form-label">Grade (out of {{ exam.total_points }})</label>
+                            <input type="number" class="form-control" id="grade" name="grade" min="0" max="{{ exam.total_points }}" step="0.1" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="feedback" class="form-label">Feedback</label>
+                            <textarea class="form-control" id="feedback" name="feedback" rows="4" required></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Submit Grade</button>
+                            <a href="{{ url_for('professor.course_details', course_id=exam.course_id) }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

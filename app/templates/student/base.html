@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('student.dashboard') }}">Student Portal</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('student.dashboard') }}">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                </li>
+                
+                <!-- Courses -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-book"></i> My Courses
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('student.courses') }}">Course List</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.course_materials') }}">Course Materials</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.course_schedule') }}">Course Schedule</a></li>
+                    </ul>
+                </li>
+
+                <!-- Assignments & Assessments -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-tasks"></i> Assessments
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('student.assignments') }}">Assignments</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.quizzes') }}">Quizzes</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.exams') }}">Exams</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.submissions') }}">My Submissions</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.grades') }}">My Grades</a></li>
+                    </ul>
+                </li>
+
+                <!-- Academic Progress -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-chart-line"></i> Progress
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('student.academic_progress') }}">Academic Progress</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.goals') }}">Academic Goals</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.performance') }}">Performance Analytics</a></li>
+                    </ul>
+                </li>
+
+                <!-- Communication -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-comments"></i> Communication
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('communication.messages') }}">Messages</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('communication.notifications') }}">Notifications</a></li>
+                    </ul>
+                </li>
+
+                <!-- Academic -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-graduation-cap"></i> Academic
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('academic.goals') }}">Academic Goals</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('academic.courses') }}">My Courses</a></li>
+                    </ul>
+                </li>
+
+                <!-- Support -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-question-circle"></i> Support
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('student.help') }}">Help Center</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.contact') }}">Contact Support</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.feedback') }}">Submit Feedback</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <!-- User Menu -->
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user"></i> {{ current_user.full_name }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">Profile</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.settings') }}">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+{% endblock %} 

@@ -1,0 +1,192 @@
+{% extends "professor/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Professor Dashboard</h1>
+    
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Active Courses</h5>
+                    <h2>{{ courses|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Total Students</h5>
+                    <h2>{{ total_students }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Tasks</h5>
+                    <h2>{{ pending_tasks|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Announcements</h5>
+                    <h2>{{ announcements|length }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Tasks -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Pending Tasks</h3>
+        </div>
+        <div class="card-body">
+            {% if pending_tasks %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Course</th>
+                                <th>Title</th>
+                                <th>Due Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in pending_tasks %}
+                                <tr>
+                                    <td>{{ task.type }}</td>
+                                    <td>{{ task.course.name }}</td>
+                                    <td>{{ task.title }}</td>
+                                    <td>{{ task.due_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <a href="{{ task.action_url }}" class="btn btn-sm btn-primary">{{ task.action_text }}</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p>No pending tasks.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Overview -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Course Overview</h3>
+        </div>
+        <div class="card-body">
+            {% if courses %}
+                <div class="row">
+                    {% for course in courses %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ course.name }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ course.code }}</h6>
+                                    <div class="row mt-3">
+                                        <div class="col-6">
+                                            <p class="mb-1"><strong>Students:</strong> {{ course.enrolled_students }}</p>
+                                            <p class="mb-1"><strong>Average Grade:</strong> {{ "%.1f"|format(course.average_grade) }}%</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <p class="mb-1"><strong>Assignments:</strong> {{ course.pending_assignments }}</p>
+                                            <p class="mb-1"><strong>Next Class:</strong> {{ course.next_class }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <a href="{{ url_for('professor.course_details', course_id=course.id) }}" 
+                                           class="btn btn-primary">View Details</a>
+                                        <a href="{{ url_for('professor.course_materials', course_id=course.id) }}" 
+                                           class="btn btn-info">Materials</a>
+                                        <a href="{{ url_for('professor.grade_submissions', course_id=course.id) }}" 
+                                           class="btn btn-success">Grade</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No courses assigned.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <!-- Recent Submissions -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Recent Submissions</h3>
+                </div>
+                <div class="card-body">
+                    {% if recent_submissions %}
+                        <div class="list-group">
+                            {% for submission in recent_submissions %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ submission.student.first_name }} {{ submission.student.last_name }}</h6>
+                                        <small>{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ submission.assignment.title }}</p>
+                                    <small>{{ submission.assignment.course.name }}</small>
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('professor.grade_submission', submission_id=submission.id) }}" 
+                                           class="btn btn-sm btn-primary">Grade</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p>No recent submissions.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Messages -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Recent Messages</h3>
+                </div>
+                <div class="card-body">
+                    {% if recent_messages %}
+                        <div class="list-group">
+                            {% for message in recent_messages %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ message.sender.first_name }} {{ message.sender.last_name }}</h6>
+                                        <small>{{ message.sent_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ message.subject }}</p>
+                                    <small>{{ message.content[:100] }}{% if message.content|length > 100 %}...{% endif %}</small>
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('professor.view_message', message_id=message.id) }}" 
+                                           class="btn btn-sm btn-primary">View</a>
+                                        <a href="{{ url_for('professor.reply_message', message_id=message.id) }}" 
+                                           class="btn btn-sm btn-info">Reply</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p>No recent messages.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

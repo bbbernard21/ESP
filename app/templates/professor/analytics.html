@@ -1,0 +1,163 @@
+{% extends "professor/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Analytics & Reports</h1>
+    
+    {% for course in courses %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>{{ course.name }}</h3>
+        </div>
+        <div class="card-body">
+            <!-- Summary Cards -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>Average Grade</h5>
+                            <h2>{{ "%.1f"|format(course.average_grade) }}%</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>Passing Rate</h5>
+                            <h2>{{ "%.1f"|format(course.passing_rate) }}%</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>Completion Rate</h5>
+                            <h2>{{ "%.1f"|format(course.completion_rate) }}%</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5>Active Students</h5>
+                            <h2>{{ course.active_students }}/{{ course.total_students }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Grade Distribution</h5>
+                            <canvas id="gradeChart{{ course.id }}"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Assignment Performance</h5>
+                            <canvas id="assignmentChart{{ course.id }}"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Progress Over Time</h5>
+                            <canvas id="progressChart{{ course.id }}"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Engagement Metrics</h5>
+                            <canvas id="engagementChart{{ course.id }}"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% for course in courses %}
+// Grade Distribution Chart
+new Chart(document.getElementById('gradeChart{{ course.id }}'), {
+    type: 'bar',
+    data: {
+        labels: ['A', 'B', 'C', 'D', 'F'],
+        datasets: [{
+            label: 'Number of Students',
+            data: [
+                {{ course.grade_a_count|default(0) }},
+                {{ course.grade_b_count|default(0) }},
+                {{ course.grade_c_count|default(0) }},
+                {{ course.grade_d_count|default(0) }},
+                {{ course.grade_f_count|default(0) }}
+            ],
+            backgroundColor: ['#28a745', '#20c997', '#17a2b8', '#ffc107', '#dc3545']
+        }]
+    }
+});
+
+// Assignment Performance Chart
+new Chart(document.getElementById('assignmentChart{{ course.id }}'), {
+    type: 'line',
+    data: {
+        labels: {{ course.assignment_labels|tojson }},
+        datasets: [{
+            label: 'Average Score',
+            data: {{ course.assignment_scores|tojson }},
+            borderColor: '#007bff',
+            fill: false
+        }]
+    }
+});
+
+// Progress Over Time Chart
+new Chart(document.getElementById('progressChart{{ course.id }}'), {
+    type: 'line',
+    data: {
+        labels: {{ course.progress_dates|tojson }},
+        datasets: [{
+            label: 'Class Average',
+            data: {{ course.progress_averages|tojson }},
+            borderColor: '#28a745',
+            fill: false
+        }]
+    }
+});
+
+// Engagement Metrics Chart
+new Chart(document.getElementById('engagementChart{{ course.id }}'), {
+    type: 'radar',
+    data: {
+        labels: ['Attendance', 'Participation', 'Assignment Completion', 'Resource Access', 'Discussion'],
+        datasets: [{
+            label: 'Class Average',
+            data: [
+                {{ course.attendance_rate|default(0) }},
+                {{ course.participation_rate|default(0) }},
+                {{ course.assignment_completion_rate|default(0) }},
+                {{ course.resource_access_rate|default(0) }},
+                {{ course.discussion_rate|default(0) }}
+            ],
+            backgroundColor: 'rgba(0, 123, 255, 0.2)',
+            borderColor: '#007bff'
+        }]
+    }
+});
+{% endfor %}
+</script>
+{% endblock %}

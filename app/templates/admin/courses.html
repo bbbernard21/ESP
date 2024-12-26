@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Manage Courses</h1>
+        <a href="{{ url_for('admin.create_course') }}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Create Course
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Program</th>
+                            <th>Professor</th>
+                            <th>Credits</th>
+                            <th>Semester</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr>
+                            <td>{{ course.id }}</td>
+                            <td>{{ course.code }}</td>
+                            <td>{{ course.name }}</td>
+                            <td>{{ course.program.name if course.program else 'N/A' }}</td>
+                            <td>{{ course.professor.first_name + ' ' + course.professor.last_name if course.professor else 'N/A' }}</td>
+                            <td>{{ course.credits }}</td>
+                            <td>{{ course.semester }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('{{ course.id }}', '{{ course.name }}')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete course <strong id="deleteCourseName"></strong>?</p>
+                <p class="text-danger">This action cannot be undone and will affect all enrolled students.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(courseId, courseName) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    document.getElementById('deleteCourseName').textContent = courseName;
+    document.getElementById('deleteForm').action = "{{ url_for('admin.delete_course', course_id=0) }}".replace('0', courseId);
+    modal.show();
+}
+</script>
+{% endblock %} 

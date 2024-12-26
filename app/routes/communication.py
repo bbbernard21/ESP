@@ -13,11 +13,11 @@ communication = Blueprint('communication', __name__)
 def messages():
     messages_received = Message.query.filter_by(
         recipient_id=current_user.id
-    ).order_by(Message.timestamp.desc()).all()
+    ).order_by(Message.sent_at.desc()).all()
     
     messages_sent = Message.query.filter_by(
         sender_id=current_user.id
-    ).order_by(Message.timestamp.desc()).all()
+    ).order_by(Message.sent_at.desc()).all()
     
     return render_template('communication/messages.html',
                          title='Messages',

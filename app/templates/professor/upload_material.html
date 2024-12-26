@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('professor.dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('professor.course_details', course_id=course.id) }}">{{ course.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Upload Material</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Upload Course Material</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="material_type" class="form-label">Material Type</label>
+                            <select class="form-select" id="material_type" name="material_type" required>
+                                <option value="lecture">Lecture Notes</option>
+                                <option value="slides">Presentation Slides</option>
+                                <option value="reading">Required Reading</option>
+                                <option value="reference">Reference Material</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="file" class="form-label">File</label>
+                            <input type="file" class="form-control" id="file" name="file" required>
+                            <div class="form-text">Supported file types: PDF, DOC, DOCX, PPT, PPTX, ZIP</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Upload Material</button>
+                            <a href="{{ url_for('professor.course_details', course_id=course.id) }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

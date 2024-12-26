@@ -58,7 +58,7 @@
                 <h5 class="mb-0">Submission Status</h5>
             </div>
             <div class="card-body">
-                <p><strong>Submitted:</strong> {{ submission.submission_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Submitted:</strong> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
                 <p><strong>Status:</strong> 
                     <span class="badge bg-{{ 'success' if submission.status == 'graded' else 'warning' }}">
                         {{ submission.status|title }}

@@ -1,0 +1,91 @@
+{% extends "professor/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Quizzes</h1>
+    
+    {% for course in courses %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>{{ course.name }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Course Quizzes</h4>
+                <a href="{{ url_for('professor.create_quiz', course_id=course.id) }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Quiz
+                </a>
+            </div>
+            
+            {% if course.quizzes %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration (mins)</th>
+                            <th>Total Marks</th>
+                            <th>Submissions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for quiz in course.quizzes %}
+                        <tr>
+                            <td>{{ quiz.title }}</td>
+                            <td>{{ quiz.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ quiz.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ quiz.duration }}</td>
+                            <td>{{ quiz.total_marks }}</td>
+                            <td>
+                                {{ quiz.submissions|length }} / {{ course.academic_records|length }}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('professor.edit_quiz', quiz_id=quiz.id) }}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{{ url_for('professor.view_quiz_submissions', quiz_id=quiz.id) }}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="fas fa-check"></i> Grade
+                                </a>
+                                <button class="btn btn-sm btn-danger" onclick="deleteQuiz('{{ quiz.id }}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No quizzes created yet.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function deleteQuiz(quizId) {
+    if (confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+        fetch(`/professor/quiz/${quizId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting quiz');
+            }
+        });
+    }
+}
+</script>
+{% endblock %} 

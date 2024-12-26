@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models.academic import Course, AcademicRecord, AcademicGoal, CourseMaterial, Assignment, AssignmentSubmission
+from app.models.academic import Course, AcademicRecord, AcademicGoal, CourseMaterial, Assignment, AssignmentSubmission, Exam
 from app.models.communication import Notification
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
@@ -28,22 +28,29 @@ def course_detail(course_id):
         course_id=course_id
     ).first_or_404()
     
+    # Get course materials
     materials = CourseMaterial.query.filter_by(course_id=course_id).all()
+    
+    # Get assignments
+    assignments = Assignment.query.filter_by(course_id=course_id).all()
+    
+    # Get exams
+    exams = Exam.query.filter_by(course_id=course_id).all()
+    
+    # Get academic goal
     academic_goal = AcademicGoal.query.filter_by(
         student_id=current_user.id,
         course_id=course_id
     ).first()
     
-    assignments = Assignment.query.filter_by(course_id=course_id)\
-        .order_by(Assignment.due_date.asc()).all()
-    
     return render_template('academic/course_detail.html',
-                         title=course.name,
+                         title=f'{course.code} - {course.name}',
                          course=course,
                          academic_record=academic_record,
                          materials=materials,
-                         academic_goal=academic_goal,
                          assignments=assignments,
+                         exams=exams,
+                         academic_goal=academic_goal,
                          now=datetime.utcnow())
 
 @academic.route('/goals', methods=['GET', 'POST'])
@@ -144,8 +151,14 @@ def grade_projection(course_id):
             
             # Calculate required grade on remaining assignments
             if remaining_weight > 0:
-                current_weight = 100 - remaining_weight
-                required_grade = (target_grade * 100 - current_grade * current_weight) / remaining_weight
+                # Calculate the weighted sum of completed components
+                completed_weight = 100 - remaining_weight
+                
+                # Calculate required grade for remaining components
+                required_grade = ((target_grade * 100) - (current_grade * completed_weight)) / remaining_weight
+                
+                # Cap the required grade at 100
+                required_grade = min(required_grade, 100)
             else:
                 required_grade = 0
                 
@@ -159,10 +172,17 @@ def grade_projection(course_id):
                 'error': str(e)
             })
     
+    # Get academic goal for pre-filling target grade
+    academic_goal = AcademicGoal.query.filter_by(
+        student_id=current_user.id,
+        course_id=course_id
+    ).first()
+    
     return render_template('academic/grade_projection.html',
                          title='Grade Projection',
                          course=course,
-                         academic_record=academic_record)
+                         academic_record=academic_record,
+                         academic_goal=academic_goal)
 
 @academic.route('/assignment/<int:assignment_id>')
 @login_required

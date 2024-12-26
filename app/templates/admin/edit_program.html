@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Edit Program</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="code" class="form-label">Program Code</label>
+                            <input type="text" class="form-control" id="code" name="code" value="{{ program.code }}" required>
+                            <div class="form-text">A unique identifier for the program (e.g., CS, MATH, ENG)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Program Name</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ program.name }}" required>
+                            <div class="form-text">The full name of the program</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ program.description }}</textarea>
+                            <div class="form-text">A brief description of the program</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Update Program</button>
+                            <a href="{{ url_for('admin.programs') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const codeInput = document.getElementById('code');
+    codeInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+    });
+});
+</script>
+{% endblock %} 

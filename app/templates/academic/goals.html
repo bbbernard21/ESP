@@ -26,7 +26,7 @@
                             <tr>
                                 <td>{{ goal.course.code }} - {{ goal.course.name }}</td>
                                 <td>{{ goal.target_grade }}</td>
-                                <td>{{ goal.deadline.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ goal.target_date.strftime('%Y-%m-%d') }}</td>
                                 <td>
                                     <span class="badge bg-{{ 'success' if goal.status == 'achieved' else 'warning' }}">
                                         {{ goal.status|title }}

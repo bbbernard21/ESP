@@ -10,65 +10,24 @@ main = Blueprint('main', __name__)
 @main.route('/index')
 @login_required
 def index():
-    # Get user's courses
-    courses = Course.query.join(AcademicRecord).filter(
-        AcademicRecord.student_id == current_user.id
-    ).all()
-    
-    # Get recent notifications
-    notifications = Notification.query.filter_by(
-        user_id=current_user.id,
-        read=False
-    ).order_by(Notification.created_at.desc()).limit(5).all()
-    
-    # Get unread messages count
-    unread_messages = Message.query.filter_by(
-        recipient_id=current_user.id,
-        read=False
-    ).count()
-    
-    return render_template('main/index.html',
-                         title='Home',
-                         courses=courses,
-                         notifications=notifications,
-                         unread_messages=unread_messages)
+    """Redirect to appropriate dashboard based on user role."""
+    if current_user.is_admin:
+        return redirect(url_for('admin.dashboard'))
+    elif current_user.is_professor:
+        return redirect(url_for('professor.dashboard'))
+    else:  # student
+        return redirect(url_for('student.dashboard'))
 
 @main.route('/dashboard')
 @login_required
 def dashboard():
-    # Get academic records
-    academic_records = AcademicRecord.query.filter_by(
-        student_id=current_user.id
-    ).join(Course).all()
-    
-    # Calculate GPA and other statistics
-    total_credits = 0
-    total_grade_points = 0
-    for record in academic_records:
-        if record.grade is not None and record.course.credits is not None:
-            total_credits += record.course.credits
-            total_grade_points += record.grade * record.course.credits
-    
-    gpa = total_grade_points / total_credits if total_credits > 0 else 0
-    
-    # Get active goals
-    active_goals = AcademicGoal.query.filter_by(
-        student_id=current_user.id,
-        status='active'
-    ).all()
-    
-    # Get recent notifications
-    notifications = Notification.query.filter_by(
-        user_id=current_user.id,
-        read=False
-    ).order_by(Notification.created_at.desc()).limit(5).all()
-    
-    return render_template('main/dashboard.html',
-                         title='Dashboard',
-                         academic_records=academic_records,
-                         gpa=gpa,
-                         active_goals=active_goals,
-                         notifications=notifications) 
+    """Redirect to appropriate dashboard based on user role."""
+    if current_user.is_admin:
+        return redirect(url_for('admin.dashboard'))
+    elif current_user.is_professor:
+        return redirect(url_for('professor.dashboard'))
+    else:  # student
+        return redirect(url_for('student.dashboard'))
 
 @main.route('/profile')
 @login_required
@@ -78,7 +37,7 @@ def profile():
 @main.route('/settings')
 @login_required
 def settings():
-    return render_template('main/settings.html', title='Settings') 
+    return render_template('main/settings.html', title='Settings')
 
 @main.route('/update_profile', methods=['POST'])
 @login_required

@@ -1,0 +1,75 @@
+{% extends "professor/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Grade Submissions</h1>
+    
+    {% if submissions %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Course</th>
+                    <th>Assignment</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for submission in submissions %}
+                <tr>
+                    <td>{{ submission.student.first_name }} {{ submission.student.last_name }}</td>
+                    <td>{{ submission.assignment.course.name }}</td>
+                    <td>{{ submission.assignment.title }}</td>
+                    <td>{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <span class="badge bg-{{ 'warning' if submission.status == 'submitted' else 'success' }}">
+                            {{ submission.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('professor.grade_submission', submission_id=submission.id) }}" 
+                           class="btn btn-sm btn-primary">
+                            <i class="fas fa-check"></i> Grade
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No pending submissions to grade.
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function updateGrade(submissionId) {
+    const grade = document.getElementById(`grade-${submissionId}`).value;
+    const feedback = document.getElementById(`feedback-${submissionId}`).value;
+    
+    fetch(`/professor/submission/${submissionId}/grade`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            grade: grade,
+            feedback: feedback
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating grade');
+        }
+    });
+}
+</script>
+{% endblock %} 
