@@ -1,0 +1,64 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>My Assignments</h1>
+    
+    {% for course in courses %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>{{ course.name }}</h3>
+        </div>
+        <div class="card-body">
+            {% set course_assignments = assignments|selectattr("course_id", "equalto", course.id)|list %}
+            {% if course_assignments %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Due Date</th>
+                            <th>Total Points</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in course_assignments %}
+                        <tr>
+                            <td>{{ assignment.title }}</td>
+                            <td>{{ assignment.due_date.strftime('%Y-%m-d') }}</td>
+                            <td>{{ assignment.total_points }}</td>
+                            <td>
+                                {% set submission = assignment.submissions|selectattr("student_id", "equalto", current_user.id)|first %}
+                                {% if submission %}
+                                    <span class="badge bg-success">Submitted</span>
+                                {% else %}
+                                    {% if assignment.due_date < now %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('student.view_assignment', assignment_id=assignment.id) }}" 
+                                   class="btn btn-sm btn-primary">View</a>
+                                {% if not submission and assignment.due_date > now %}
+                                <a href="{{ url_for('student.submit_assignment', assignment_id=assignment.id) }}" 
+                                   class="btn btn-sm btn-success">Submit</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No assignments for this course.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %} 

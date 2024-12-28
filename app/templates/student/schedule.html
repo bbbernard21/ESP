@@ -1,0 +1,134 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Course Schedule</h1>
+    
+    <!-- Calendar View -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Calendar</h3>
+        </div>
+        <div class="card-body">
+            <div id="calendar"></div>
+        </div>
+    </div>
+    
+    <!-- Upcoming Events -->
+    <div class="row">
+        <!-- Assignments -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Upcoming Assignments</h4>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_assignments %}
+                    <div class="list-group">
+                        {% for assignment in upcoming_assignments %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ assignment.title }}</h6>
+                            <p class="mb-1">{{ assignment.course.name }}</p>
+                            <small class="text-muted">Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No upcoming assignments</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Exams -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Upcoming Exams</h4>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_exams %}
+                    <div class="list-group">
+                        {% for exam in upcoming_exams %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ exam.title }}</h6>
+                            <p class="mb-1">{{ exam.course.name }}</p>
+                            <small class="text-muted">Date: {{ exam.exam_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No upcoming exams</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quizzes -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Upcoming Quizzes</h4>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_quizzes %}
+                    <div class="list-group">
+                        {% for quiz in upcoming_quizzes %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ quiz.title }}</h6>
+                            <p class="mb-1">{{ quiz.course.name }}</p>
+                            <small class="text-muted">Due: {{ quiz.due_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No upcoming quizzes</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: [
+            {% for assignment in upcoming_assignments %}
+            {
+                title: 'Assignment: {{ assignment.title }}',
+                start: '{{ assignment.due_date.strftime("%Y-%m-%d") }}',
+                classNames: ['bg-primary']
+            },
+            {% endfor %}
+            {% for exam in upcoming_exams %}
+            {
+                title: 'Exam: {{ exam.title }}',
+                start: '{{ exam.exam_date.strftime("%Y-%m-%d") }}',
+                classNames: ['bg-danger']
+            },
+            {% endfor %}
+            {% for quiz in upcoming_quizzes %}
+            {
+                title: 'Quiz: {{ quiz.title }}',
+                start: '{{ quiz.due_date.strftime("%Y-%m-%d") }}',
+                classNames: ['bg-warning']
+            },
+            {% endfor %}
+        ]
+    });
+    calendar.render();
+});
+</script>
+{% endblock %} 

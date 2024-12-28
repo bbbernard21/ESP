@@ -1,0 +1,116 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Help Center</h1>
+    
+    <!-- Quick Links -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                    <h4>User Guide</h4>
+                    <p>Learn how to use the student portal effectively</p>
+                    <a href="{{ url_for('student.user_guide') }}" class="btn btn-primary">View Guide</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-question-circle fa-3x text-success mb-3"></i>
+                    <h4>FAQs</h4>
+                    <p>Find answers to common questions</p>
+                    <a href="{{ url_for('student.faqs') }}" class="btn btn-success">View FAQs</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-headset fa-3x text-info mb-3"></i>
+                    <h4>Support</h4>
+                    <p>Contact our support team for assistance</p>
+                    <a href="{{ url_for('student.contact_support') }}" class="btn btn-info">Get Support</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search Help -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3>Search Help Topics</h3>
+            <form action="{{ url_for('student.search_help') }}" method="GET" class="mb-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="q" placeholder="Search help topics...">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+            
+            {% if search_results %}
+            <div class="list-group">
+                {% for result in search_results %}
+                <a href="{{ url_for('student.help_topic', topic_id=result.id) }}" 
+                   class="list-group-item list-group-item-action">
+                    <h5 class="mb-1">{{ result.title }}</h5>
+                    <p class="mb-1">{{ result.description }}</p>
+                    <small class="text-muted">Category: {{ result.category }}</small>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Popular Topics -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Popular Topics</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for topic in popular_topics %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ topic.title }}</h5>
+                            <p class="card-text">{{ topic.description }}</p>
+                            <a href="{{ url_for('student.help_topic', topic_id=topic.id) }}" 
+                               class="btn btn-outline-primary">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Help Categories -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Help Categories</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for category in help_categories %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="{{ category.icon }} text-primary"></i>
+                                {{ category.name }}
+                            </h5>
+                            <p class="card-text">{{ category.description }}</p>
+                            <a href="{{ url_for('student.help_category', category_id=category.id) }}" 
+                               class="btn btn-outline-primary">View Topics</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

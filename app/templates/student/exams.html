@@ -1,0 +1,79 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>My Exams</h1>
+    
+    {% for course in courses %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>{{ course.name }}</h3>
+        </div>
+        <div class="card-body">
+            {% set course_exams = exams|selectattr("course_id", "equalto", course.id)|list %}
+            {% if course_exams %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                            <th>Grade</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam in course_exams %}
+                        <tr>
+                            <td>{{ exam.title }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'warning' if exam.exam_type == 'midterm' else 'success' }}">
+                                    {{ exam.exam_type|title }}
+                                </span>
+                            </td>
+                            <td>{{ exam.exam_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ exam.duration }} mins</td>
+                            <td>
+                                {% if exam.exam_date > now %}
+                                    <span class="badge bg-info">Upcoming</span>
+                                {% elif exam.exam_date <= now and exam.exam_date + timedelta(minutes=exam.duration) > now %}
+                                    <span class="badge bg-warning">In Progress</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Completed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set grade = exam.exam_grades|selectattr("student_id", "equalto", current_user.id)|first %}
+                                {% if grade %}
+                                    {{ grade.grade }}/{{ exam.total_points }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if exam.exam_date > now %}
+                                    <button class="btn btn-sm btn-secondary" disabled>Not Started</button>
+                                {% elif exam.exam_date <= now and exam.exam_date + timedelta(minutes=exam.duration) > now %}
+                                    <a href="{{ url_for('student.take_exam', exam_id=exam.id) }}" 
+                                       class="btn btn-sm btn-primary">Take Exam</a>
+                                {% else %}
+                                    <a href="{{ url_for('student.view_exam', exam_id=exam.id) }}" 
+                                       class="btn btn-sm btn-info">View Details</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No exams for this course.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %} 

@@ -1,0 +1,153 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Student Portal User Guide</h1>
+    
+    <!-- Quick Navigation -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Quick Navigation</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <a href="#getting-started" class="text-decoration-none">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-rocket fa-2x text-primary mb-2"></i>
+                                <h5>Getting Started</h5>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <a href="#courses" class="text-decoration-none">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-book fa-2x text-success mb-2"></i>
+                                <h5>Course Management</h5>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <a href="#assessments" class="text-decoration-none">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-tasks fa-2x text-info mb-2"></i>
+                                <h5>Assessments</h5>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Getting Started -->
+    <div class="card mb-4" id="getting-started">
+        <div class="card-header">
+            <h3>Getting Started</h3>
+        </div>
+        <div class="card-body">
+            <h4>Dashboard Overview</h4>
+            <p>Your dashboard is your central hub for managing your academic journey. Here you'll find:</p>
+            <ul>
+                <li>Overall GPA and academic performance metrics</li>
+                <li>Enrolled courses and their current status</li>
+                <li>Upcoming assignments and deadlines</li>
+                <li>Recent activities and notifications</li>
+            </ul>
+            
+            <h4>Navigation Menu</h4>
+            <p>The main navigation menu provides quick access to:</p>
+            <ul>
+                <li>Course materials and schedules</li>
+                <li>Assignments and assessments</li>
+                <li>Academic progress tracking</li>
+                <li>Communication tools</li>
+                <li>Support resources</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Course Management -->
+    <div class="card mb-4" id="courses">
+        <div class="card-header">
+            <h3>Course Management</h3>
+        </div>
+        <div class="card-body">
+            <h4>Viewing Courses</h4>
+            <p>Access your courses through the "My Courses" dropdown menu:</p>
+            <ul>
+                <li>View course details, including syllabus and schedule</li>
+                <li>Access course materials and resources</li>
+                <li>Track course progress and grades</li>
+                <li>Communicate with professors and classmates</li>
+            </ul>
+            
+            <h4>Course Materials</h4>
+            <p>Each course provides access to:</p>
+            <ul>
+                <li>Lecture notes and presentations</li>
+                <li>Required readings and textbooks</li>
+                <li>Supplementary resources</li>
+                <li>Study guides and practice materials</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Assessments -->
+    <div class="card mb-4" id="assessments">
+        <div class="card-header">
+            <h3>Assessments</h3>
+        </div>
+        <div class="card-body">
+            <h4>Managing Assignments</h4>
+            <p>Keep track of your assignments through the Assessments menu:</p>
+            <ul>
+                <li>View assignment details and requirements</li>
+                <li>Submit completed work</li>
+                <li>Track submission status and grades</li>
+                <li>Receive feedback from professors</li>
+            </ul>
+            
+            <h4>Exams and Quizzes</h4>
+            <p>Prepare for and complete assessments:</p>
+            <ul>
+                <li>View exam schedules and requirements</li>
+                <li>Access practice quizzes and study materials</li>
+                <li>Submit online assessments</li>
+                <li>Review grades and feedback</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Academic Progress -->
+    <div class="card mb-4" id="progress">
+        <div class="card-header">
+            <h3>Academic Progress</h3>
+        </div>
+        <div class="card-body">
+            <h4>Progress Tracking</h4>
+            <p>Monitor your academic progress through various tools:</p>
+            <ul>
+                <li>Track overall GPA and course grades</li>
+                <li>Set and monitor academic goals</li>
+                <li>View performance analytics</li>
+                <li>Generate progress reports</li>
+            </ul>
+            
+            <h4>Academic Goals</h4>
+            <p>Set and manage your academic goals:</p>
+            <ul>
+                <li>Create course-specific goals</li>
+                <li>Track goal progress</li>
+                <li>Receive progress notifications</li>
+                <li>Adjust goals as needed</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %} 

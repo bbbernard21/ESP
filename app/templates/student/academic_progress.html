@@ -1,0 +1,191 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Academic Progress</h1>
+    
+    <!-- Overall Progress -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Overall GPA</h3>
+                    <h1 class="display-4">{{ "%.2f"|format(overall_gpa) }}</h1>
+                    <p>Credits Completed: {{ completed_credits }}/{{ total_credits }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h3>Progress to Graduation</h3>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-success" 
+                             role="progressbar" 
+                             style="width: {{ (completed_credits/total_credits)*100 }}%"
+                             aria-valuenow="{{ completed_credits }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ total_credits }}">
+                            {{ "%.1f"|format((completed_credits/total_credits)*100) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Semester Progress -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Semester Progress</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Current Semester: {{ current_semester }}</h4>
+                    <p>Credits Enrolled: {{ current_credits }}</p>
+                    <p>Expected GPA: {{ "%.2f"|format(expected_gpa) }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h4>Semester Timeline</h4>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-info" 
+                             role="progressbar" 
+                             style="width: {{ semester_progress }}%"
+                             aria-valuenow="{{ semester_progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ "%.1f"|format(semester_progress) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Academic Goals -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Academic Goals</h3>
+                <a href="{{ url_for('student.set_goal') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Set New Goal
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if academic_goals %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Goal</th>
+                            <th>Target Date</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for goal in academic_goals %}
+                        <tr>
+                            <td>{{ goal.description }}</td>
+                            <td>{{ goal.target_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar bg-{{ 'success' if goal.progress >= 100 else 'info' }}" 
+                                         role="progressbar" 
+                                         style="width: {{ goal.progress }}%"
+                                         aria-valuenow="{{ goal.progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ "%.1f"|format(goal.progress) }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if goal.status == 'achieved' else 'warning' }}">
+                                    {{ goal.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('student.edit_goal', goal_id=goal.id) }}" 
+                                   class="btn btn-sm btn-info">Edit</a>
+                                <a href="{{ url_for('student.delete_goal', goal_id=goal.id) }}" 
+                                   class="btn btn-sm btn-danger">Delete</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No academic goals set. Click the button above to set your first goal!</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Course Progress -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Course Progress</h3>
+        </div>
+        <div class="card-body">
+            {% if courses %}
+            <div class="row">
+                {% for course in courses %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>{{ course.name }}</h5>
+                            <p class="text-muted">{{ course.code }}</p>
+                            
+                            <div class="mb-3">
+                                <h6>Overall Progress</h6>
+                                <div class="progress">
+                                    <div class="progress-bar bg-{{ 'success' if course.progress >= 80 else 'warning' }}" 
+                                         role="progressbar" 
+                                         style="width: {{ course.progress }}%"
+                                         aria-valuenow="{{ course.progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ "%.1f"|format(course.progress) }}%
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6>Current Grade: {{ "%.1f"|format(course.current_grade) }}%</h6>
+                                <div class="progress">
+                                    <div class="progress-bar bg-{{ 'success' if course.current_grade >= 80 else 'warning' }}" 
+                                         role="progressbar" 
+                                         style="width: {{ course.current_grade }}%"
+                                         aria-valuenow="{{ course.current_grade }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ "%.1f"|format(course.current_grade) }}%
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-6">
+                                    <p><strong>Assignments:</strong> {{ course.completed_assignments }}/{{ course.total_assignments }}</p>
+                                    <p><strong>Materials:</strong> {{ course.accessed_materials }}/{{ course.total_materials }}</p>
+                                </div>
+                                <div class="col-6">
+                                    <p><strong>Quizzes:</strong> {{ course.completed_quizzes }}/{{ course.total_quizzes }}</p>
+                                    <p><strong>Exams:</strong> {{ course.completed_exams }}/{{ course.total_exams }}</p>
+                                </div>
+                            </div>
+                            
+                            <a href="{{ url_for('student.course_details', course_id=course.id) }}" 
+                               class="btn btn-primary">View Details</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>No courses enrolled.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

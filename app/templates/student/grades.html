@@ -1,0 +1,125 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>My Grades</h1>
+    
+    <!-- Overall GPA -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Overall GPA</h3>
+                    <h1 class="display-4">{{ "%.2f"|format(overall_gpa) }}</h1>
+                </div>
+                <div class="col-md-6">
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-{{ 'success' if overall_gpa >= 3.5 else 'warning' if overall_gpa >= 2.0 else 'danger' }}" 
+                             role="progressbar" 
+                             style="width: {{ (overall_gpa/4.0)*100 }}%"
+                             aria-valuenow="{{ overall_gpa }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="4.0">
+                            {{ "%.2f"|format(overall_gpa) }}/4.0
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Course Grades -->
+    {% for course in courses %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>{{ course.name }}</h3>
+        </div>
+        <div class="card-body">
+            <!-- Overall Course Grade -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h4>Current Grade: {{ "%.1f"|format(course.current_grade) }}%</h4>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-{{ 'success' if course.current_grade >= 80 else 'warning' if course.current_grade >= 60 else 'danger' }}" 
+                             role="progressbar" 
+                             style="width: {{ course.current_grade }}%"
+                             aria-valuenow="{{ course.current_grade }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ "%.1f"|format(course.current_grade) }}%
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h4>Grade Distribution</h4>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {{ course.assignments_weight }}%"
+                             title="Assignments: {{ course.assignments_weight }}%">
+                            Assignments ({{ course.assignments_weight }}%)
+                        </div>
+                        <div class="progress-bar bg-warning" role="progressbar" 
+                             style="width: {{ course.midterm_weight }}%"
+                             title="Midterm: {{ course.midterm_weight }}%">
+                            Midterm ({{ course.midterm_weight }}%)
+                        </div>
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ course.final_weight }}%"
+                             title="Final: {{ course.final_weight }}%">
+                            Final ({{ course.final_weight }}%)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Grades -->
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Type</th>
+                            <th>Due Date</th>
+                            <th>Grade</th>
+                            <th>Weight</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in course.grade_items %}
+                        <tr>
+                            <td>{{ item.title }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'primary' if item.type == 'assignment' else 'warning' if item.type == 'midterm' else 'success' }}">
+                                    {{ item.type|title }}
+                                </span>
+                            </td>
+                            <td>{{ item.due_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if item.grade %}
+                                    {{ item.grade }}/{{ item.total_points }}
+                                    ({{ "%.1f"|format((item.grade/item.total_points)*100) }}%)
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ item.weight }}%</td>
+                            <td>
+                                {% if item.type == 'assignment' %}
+                                <a href="{{ url_for('student.view_submission', submission_id=item.submission_id) }}" 
+                                   class="btn btn-sm btn-info">View Submission</a>
+                                {% elif item.type in ['midterm', 'final'] %}
+                                <a href="{{ url_for('student.view_exam', exam_id=item.exam_id) }}" 
+                                   class="btn btn-sm btn-info">View Exam</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %} 

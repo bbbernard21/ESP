@@ -1,0 +1,60 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('student.help') }}">Help Center</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('student.help_category', category_id=topic.category.id) }}">{{ topic.category.name }}</a></li>
+            <li class="breadcrumb-item active">{{ topic.title }}</li>
+        </ol>
+    </nav>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ topic.title }}</h2>
+            <div class="text-muted">
+                <i class="fas fa-folder me-2"></i>{{ topic.category.name }}
+                <span class="mx-2">|</span>
+                <i class="fas fa-clock me-2"></i>Last updated: {{ topic.updated_at.strftime('%Y-%m-%d') }}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="content">
+                {{ topic.content|safe }}
+            </div>
+            
+            {% if topic.related_topics %}
+            <hr>
+            <h4>Related Topics</h4>
+            <div class="list-group">
+                {% for related in topic.related_topics %}
+                <a href="{{ url_for('student.help_topic', topic_id=related.id) }}" 
+                   class="list-group-item list-group-item-action">
+                    {{ related.title }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <div class="row align-items-center">
+                <div class="col">
+                    <div class="text-muted">Was this helpful?</div>
+                    <button class="btn btn-sm btn-outline-success me-2">
+                        <i class="fas fa-thumbs-up"></i> Yes
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-thumbs-down"></i> No
+                    </button>
+                </div>
+                <div class="col text-end">
+                    <a href="{{ url_for('student.contact_support') }}" class="btn btn-primary">
+                        <i class="fas fa-question-circle"></i> Need More Help?
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

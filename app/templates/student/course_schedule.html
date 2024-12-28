@@ -1,0 +1,51 @@
+{% extends "student/base.html" %}
+
+{% block styles %}
+{{ super() }}
+<link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ course.name }} - Schedule</h4>
+                    <a href="{{ url_for('student.course_detail', course_id=course.id) }}" 
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Course
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        plugins: ['dayGrid'],
+        initialView: 'dayGridMonth',
+        events: {{ events|tojson|safe }},
+        eventClick: function(info) {
+            if (info.event.url) {
+                window.location.href = info.event.url;
+                return false;
+            }
+        }
+    });
+    calendar.render();
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,107 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Announcements</h1>
+    
+    <!-- Filter Options -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="course" class="form-label">Course</label>
+                    <select class="form-select" id="course" name="course">
+                        <option value="">All Courses</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" {{ 'selected' if selected_course == course.id }}>
+                            {{ course.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}" {{ 'selected' if selected_category == category }}>
+                            {{ category|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="timeframe" class="form-label">Timeframe</label>
+                    <select class="form-select" id="timeframe" name="timeframe">
+                        <option value="all" {{ 'selected' if timeframe == 'all' }}>All Time</option>
+                        <option value="today" {{ 'selected' if timeframe == 'today' }}>Today</option>
+                        <option value="week" {{ 'selected' if timeframe == 'week' }}>This Week</option>
+                        <option value="month" {{ 'selected' if timeframe == 'month' }}>This Month</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{{ url_for('student.announcements') }}" class="btn btn-secondary">Clear Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Announcements List -->
+    <div class="card">
+        <div class="card-body">
+            {% if announcements %}
+            <div class="list-group">
+                {% for announcement in announcements %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ announcement.title }}</h5>
+                        <small class="text-muted">
+                            {{ announcement.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </small>
+                    </div>
+                    <p class="mb-1">{{ announcement.content }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            {% if announcement.course %}
+                            <i class="fas fa-book"></i> {{ announcement.course.name }} |
+                            {% endif %}
+                            <i class="fas fa-tag"></i> {{ announcement.category|title }} |
+                            <i class="fas fa-user"></i> {{ announcement.author.first_name }} {{ announcement.author.last_name }}
+                        </small>
+                        {% if announcement.has_attachment %}
+                        <a href="{{ url_for('student.download_announcement_attachment', announcement_id=announcement.id) }}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-paperclip"></i> Download Attachment
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if pages > 1 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {{ 'disabled' if page == 1 }}">
+                        <a class="page-link" href="{{ url_for('student.announcements', page=page-1) }}">Previous</a>
+                    </li>
+                    {% for p in range(1, pages + 1) %}
+                    <li class="page-item {{ 'active' if p == page }}">
+                        <a class="page-link" href="{{ url_for('student.announcements', page=p) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {{ 'disabled' if page == pages }}">
+                        <a class="page-link" href="{{ url_for('student.announcements', page=page+1) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <p class="text-center">No announcements found matching your criteria.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,232 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Frequently Asked Questions</h1>
+    
+    <!-- Search FAQs -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ url_for('student.search_faqs') }}" method="GET">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="q" placeholder="Search FAQs...">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- FAQ Categories -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="#general" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                    General Questions
+                </a>
+                <a href="#courses" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    Courses & Enrollment
+                </a>
+                <a href="#assignments" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    Assignments & Exams
+                </a>
+                <a href="#grades" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    Grades & Progress
+                </a>
+                <a href="#technical" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    Technical Support
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="tab-content">
+                <!-- General Questions -->
+                <div class="tab-pane fade show active" id="general">
+                    <div class="accordion" id="generalAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#general1">
+                                    How do I update my profile information?
+                                </button>
+                            </h2>
+                            <div id="general1" class="accordion-collapse collapse show" data-bs-parent="#generalAccordion">
+                                <div class="accordion-body">
+                                    Click on your name in the top-right corner, select "Profile", and click the "Edit Profile" button. You can update your personal information there.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#general2">
+                                    How do I change my password?
+                                </button>
+                            </h2>
+                            <div id="general2" class="accordion-collapse collapse" data-bs-parent="#generalAccordion">
+                                <div class="accordion-body">
+                                    Go to Settings > Security, enter your current password and your new password twice to confirm the change.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Courses & Enrollment -->
+                <div class="tab-pane fade" id="courses">
+                    <div class="accordion" id="coursesAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#courses1">
+                                    How do I view my enrolled courses?
+                                </button>
+                            </h2>
+                            <div id="courses1" class="accordion-collapse collapse show" data-bs-parent="#coursesAccordion">
+                                <div class="accordion-body">
+                                    Click on "My Courses" in the navigation menu to see a list of all your enrolled courses.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#courses2">
+                                    How do I access course materials?
+                                </button>
+                            </h2>
+                            <div id="courses2" class="accordion-collapse collapse" data-bs-parent="#coursesAccordion">
+                                <div class="accordion-body">
+                                    Select a course from "My Courses" and click on "Course Materials" to access all available resources.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assignments & Exams -->
+                <div class="tab-pane fade" id="assignments">
+                    <div class="accordion" id="assignmentsAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#assignments1">
+                                    How do I submit an assignment?
+                                </button>
+                            </h2>
+                            <div id="assignments1" class="accordion-collapse collapse show" data-bs-parent="#assignmentsAccordion">
+                                <div class="accordion-body">
+                                    Go to Assessments > Assignments, select the assignment you want to submit, and click the "Submit" button to upload your work.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#assignments2">
+                                    What file formats are accepted for submissions?
+                                </button>
+                            </h2>
+                            <div id="assignments2" class="accordion-collapse collapse" data-bs-parent="#assignmentsAccordion">
+                                <div class="accordion-body">
+                                    Common formats like PDF, DOC, DOCX, and ZIP are accepted. Check the assignment requirements for specific format guidelines.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Grades & Progress -->
+                <div class="tab-pane fade" id="grades">
+                    <div class="accordion" id="gradesAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#grades1">
+                                    How is my GPA calculated?
+                                </button>
+                            </h2>
+                            <div id="grades1" class="accordion-collapse collapse show" data-bs-parent="#gradesAccordion">
+                                <div class="accordion-body">
+                                    Your GPA is calculated based on your course grades weighted by credit hours. A = 4.0, B = 3.0, C = 2.0, D = 1.0, F = 0.0
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#grades2">
+                                    How do I track my academic progress?
+                                </button>
+                            </h2>
+                            <div id="grades2" class="accordion-collapse collapse" data-bs-parent="#gradesAccordion">
+                                <div class="accordion-body">
+                                    Go to Progress > Academic Progress to view your overall progress, course grades, and performance analytics.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Technical Support -->
+                <div class="tab-pane fade" id="technical">
+                    <div class="accordion" id="technicalAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#technical1">
+                                    What browsers are supported?
+                                </button>
+                            </h2>
+                            <div id="technical1" class="accordion-collapse collapse show" data-bs-parent="#technicalAccordion">
+                                <div class="accordion-body">
+                                    The portal works best with recent versions of Chrome, Firefox, Safari, and Edge.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#technical2">
+                                    How do I report technical issues?
+                                </button>
+                            </h2>
+                            <div id="technical2" class="accordion-collapse collapse" data-bs-parent="#technicalAccordion">
+                                <div class="accordion-body">
+                                    Go to Support > Contact Support and select "Technical Support" from the category dropdown menu.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Still Need Help -->
+    <div class="card">
+        <div class="card-body text-center">
+            <h4>Still Need Help?</h4>
+            <p>If you couldn't find the answer you were looking for, our support team is here to help.</p>
+            <a href="{{ url_for('student.contact_support') }}" class="btn btn-primary">Contact Support</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap list and accordion
+    var triggerTabList = [].slice.call(document.querySelectorAll('[data-bs-toggle="list"]'));
+    triggerTabList.forEach(function(triggerEl) {
+        new bootstrap.Tab(triggerEl);
+    });
+});
+</script>
+{% endblock %} 

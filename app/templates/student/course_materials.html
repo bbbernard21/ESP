@@ -1,4 +1,4 @@
-{% extends "student/base.html" if current_user.role == 'student' else "base.html" %}
+{% extends "student/base.html" %}
 
 {% block content %}
 <div class="container mt-4">
@@ -7,7 +7,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">{{ course.name }} - Course Materials</h4>
-                    <a href="{{ url_for('academic.course_detail', course_id=course.id) }}" 
+                    <a href="{{ url_for('student.course_detail', course_id=course.id) }}" 
                        class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-arrow-left me-1"></i> Back to Course
                     </a>
@@ -26,7 +26,7 @@
                             <small class="text-danger">Due: {{ material.due_date.strftime('%Y-%m-%d') }}</small>
                             {% endif %}
                             <div class="mt-2">
-                                <a href="{{ url_for('academic.download_material', material_id=material.id) }}" 
+                                <a href="{{ url_for('student.download_material', material_id=material.id) }}" 
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-download me-1"></i> Download
                                 </a>

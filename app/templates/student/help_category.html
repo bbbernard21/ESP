@@ -1,0 +1,86 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('student.help') }}">Help Center</a></li>
+            <li class="breadcrumb-item active">{{ category.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="{{ category.icon }} me-2"></i>
+                    {{ category.name }}
+                </h2>
+                <form action="{{ url_for('student.search_help') }}" method="GET" class="d-flex">
+                    <input type="hidden" name="category" value="{{ category.id }}">
+                    <input type="text" class="form-control me-2" name="q" placeholder="Search in this category...">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </form>
+            </div>
+            <p class="text-muted mb-0">{{ category.description }}</p>
+        </div>
+        <div class="card-body">
+            {% if topics %}
+            <div class="row">
+                {% for topic in topics %}
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ topic.title }}</h5>
+                            <p class="card-text">{{ topic.description }}</p>
+                            <a href="{{ url_for('student.help_topic', topic_id=topic.id) }}" 
+                               class="btn btn-outline-primary">Read More</a>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>Last updated: {{ topic.updated_at.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">No help topics available in this category.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Popular Topics -->
+    {% if popular_topics %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>Popular Topics in {{ category.name }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for topic in popular_topics %}
+                <a href="{{ url_for('student.help_topic', topic_id=topic.id) }}" 
+                   class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ topic.title }}</h5>
+                        <small class="text-muted">{{ topic.views }} views</small>
+                    </div>
+                    <p class="mb-1">{{ topic.description }}</p>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Need More Help -->
+    <div class="card mt-4">
+        <div class="card-body text-center">
+            <h4>Can't Find What You're Looking For?</h4>
+            <p>Our support team is here to help you with any questions you may have.</p>
+            <a href="{{ url_for('student.contact_support') }}" class="btn btn-primary">
+                <i class="fas fa-headset me-2"></i>Contact Support
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

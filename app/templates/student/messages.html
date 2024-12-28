@@ -1,0 +1,99 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Message List -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Messages</h3>
+                        <a href="{{ url_for('student.new_message') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> New Message
+                        </a>
+                    </div>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for message in messages %}
+                    <a href="{{ url_for('student.view_message', message_id=message.id) }}" 
+                       class="list-group-item list-group-item-action {{ 'active' if message.id == current_message.id }}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ message.sender.first_name }} {{ message.sender.last_name }}</h6>
+                            <small>{{ message.sent_at.strftime('%H:%M') }}</small>
+                        </div>
+                        <p class="mb-1">{{ message.subject }}</p>
+                        <small class="text-muted">{{ message.preview }}</small>
+                        {% if not message.is_read %}
+                        <span class="badge bg-primary float-end">New</span>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Content -->
+        <div class="col-md-8">
+            {% if current_message %}
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ current_message.subject }}</h4>
+                        <div>
+                            <a href="{{ url_for('student.reply_message', message_id=current_message.id) }}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-reply"></i> Reply
+                            </a>
+                            <a href="{{ url_for('student.delete_message', message_id=current_message.id) }}" 
+                               class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i> Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>From:</strong> {{ current_message.sender.first_name }} {{ current_message.sender.last_name }}
+                                <br>
+                                <strong>To:</strong> {{ current_message.recipient.first_name }} {{ current_message.recipient.last_name }}
+                            </div>
+                            <div class="text-muted">
+                                {{ current_message.sent_at.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="message-content">
+                        {{ current_message.content|safe }}
+                    </div>
+                    {% if current_message.attachments %}
+                    <hr>
+                    <div class="attachments">
+                        <h5>Attachments</h5>
+                        <div class="list-group">
+                            {% for attachment in current_message.attachments %}
+                            <a href="{{ url_for('student.download_attachment', attachment_id=attachment.id) }}" 
+                               class="list-group-item list-group-item-action">
+                                <i class="fas fa-paperclip"></i> {{ attachment.filename }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center">
+                    <h4>No message selected</h4>
+                    <p>Select a message from the list to view its contents.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
