@@ -1,0 +1,102 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Academic Progress</h2>
+    
+    <!-- Overall GPA Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Overall GPA</h4>
+                    <h2 class="display-4">{{ "%.2f"|format(overall_gpa) }}</h2>
+                </div>
+                <div class="col-md-6">
+                    <h4>Progress</h4>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-{{ 'success' if overall_gpa >= 3.5 else 'warning' if overall_gpa >= 2.0 else 'danger' }}"
+                             role="progressbar"
+                             style="width: {{ (overall_gpa/4.0)*100 }}%"
+                             aria-valuenow="{{ overall_gpa }}"
+                             aria-valuemin="0"
+                             aria-valuemax="4.0">
+                            {{ "%.2f"|format(overall_gpa) }}/4.0
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Progress Cards -->
+    <div class="row">
+        {% for course in enrolled_courses %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ course.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Current Grade -->
+                    <div class="mb-3">
+                        <h6>Current Grade</h6>
+                        {% if course.current_grade is not none %}
+                            <h3>{{ "%.1f"|format(course.current_grade) }}%</h3>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-{{ 'success' if course.current_grade >= 80 else 'warning' if course.current_grade >= 60 else 'danger' }}"
+                                     role="progressbar"
+                                     style="width: {{ course.current_grade }}%"
+                                     aria-valuenow="{{ course.current_grade }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {{ "%.1f"|format(course.current_grade) }}%
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No grade available</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Assignment Progress -->
+                    <div class="mb-3">
+                        <h6>Assignments Completed</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-info"
+                                 role="progressbar"
+                                 style="width: {{ (course.completed_assignments/course.total_assignments*100) if course.total_assignments > 0 else 0 }}%">
+                                {{ course.completed_assignments }}/{{ course.total_assignments }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Exam Progress -->
+                    <div class="mb-3">
+                        <h6>Exams Completed</h6>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-warning"
+                                 role="progressbar"
+                                 style="width: {{ (course.completed_exams/course.total_exams*100) if course.total_exams > 0 else 0 }}%">
+                                {{ course.completed_exams }}/{{ course.total_exams }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Progress -->
+                    <div class="mb-3">
+                        <h6>Quizzes Completed</h6>
+                        <div class="progress">
+                            <div class="progress-bar bg-success"
+                                 role="progressbar"
+                                 style="width: {{ (course.completed_quizzes/course.total_quizzes*100) if course.total_quizzes > 0 else 0 }}%">
+                                {{ course.completed_quizzes }}/{{ course.total_quizzes }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

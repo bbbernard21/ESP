@@ -2,101 +2,89 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Course Schedule</h1>
-    
-    <!-- Calendar View -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>Calendar</h3>
-        </div>
-        <div class="card-body">
-            <div id="calendar"></div>
+    <!-- Header with title and buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Global Student Schedule</h2>
+        <div class="btn-group">
+            <button class="btn btn-primary active" id="calendarView">
+                <i class="fas fa-calendar"></i> Calendar
+            </button>
+            <button class="btn btn-outline-primary" id="listView">
+                <i class="fas fa-list"></i> List
+            </button>
         </div>
     </div>
-    
-    <!-- Upcoming Events -->
-    <div class="row">
-        <!-- Assignments -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h4>Upcoming Assignments</h4>
-                </div>
-                <div class="card-body">
-                    {% if upcoming_assignments %}
-                    <div class="list-group">
-                        {% for assignment in upcoming_assignments %}
-                        <div class="list-group-item">
-                            <h6 class="mb-1">{{ assignment.title }}</h6>
-                            <p class="mb-1">{{ assignment.course.name }}</p>
-                            <small class="text-muted">Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') }}</small>
-                        </div>
-                        {% endfor %}
+
+    <!-- Calendar View -->
+    <div id="calendar"></div>
+
+    <!-- List View -->
+    <div id="listViewContainer" style="display: none;">
+        <div class="list-group">
+            {% set course_colors = {
+                'Introduction to Programming': '#4A90E2',
+                'Data Structures': '#50E3C2',
+                'Algorithms': '#F5A623',
+                'Database Systems': '#9013FE',
+                'Operating Systems': '#E94E77',
+                'Computer Networks': '#FF847C'
+            } %}
+            {% set type_colors = {
+                'Assignment': '#A0E7A0',
+                'Exam': '#F8BBD0',
+                'Quiz': '#BBDEFB'
+            } %}
+            
+            {% for item in schedule_items|sort(attribute='date') %}
+            <div class="list-group-item" 
+                 style="background-color: {{ course_colors.get(item.course.name, '#ccc') }}; 
+                        border-left-color: {{ course_colors.get(item.course.name, '#ccc') }};">
+                <div class="d-flex align-items-center">
+                    <span class="event-circle me-2" style="background-color: {{ type_colors.get(item.type, '#ddd') }};"></span>
+                    <div>
+                        <h5 class="mb-1">
+                            {{ item.title }}
+                            <small class="text-muted">({{ item.type }})</small>
+                        </h5>
+                        <p class="mb-1">{{ item.description|default("No description available") }}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-book me-1"></i>{{ item.course.name }}
+                        </small><br>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i> 
+                            {{ item.date.strftime('%B %d, %Y at %I:%M %p') }}
+                        </small>
                     </div>
-                    {% else %}
-                    <p class="text-muted">No upcoming assignments</p>
-                    {% endif %}
                 </div>
             </div>
-        </div>
-        
-        <!-- Exams -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h4>Upcoming Exams</h4>
-                </div>
-                <div class="card-body">
-                    {% if upcoming_exams %}
-                    <div class="list-group">
-                        {% for exam in upcoming_exams %}
-                        <div class="list-group-item">
-                            <h6 class="mb-1">{{ exam.title }}</h6>
-                            <p class="mb-1">{{ exam.course.name }}</p>
-                            <small class="text-muted">Date: {{ exam.exam_date.strftime('%Y-%m-%d %H:%M') }}</small>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted">No upcoming exams</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quizzes -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h4>Upcoming Quizzes</h4>
-                </div>
-                <div class="card-body">
-                    {% if upcoming_quizzes %}
-                    <div class="list-group">
-                        {% for quiz in upcoming_quizzes %}
-                        <div class="list-group-item">
-                            <h6 class="mb-1">{{ quiz.title }}</h6>
-                            <p class="mb-1">{{ quiz.course.name }}</p>
-                            <small class="text-muted">Due: {{ quiz.due_date.strftime('%Y-%m-%d %H:%M') }}</small>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted">No upcoming quizzes</p>
-                    {% endif %}
-                </div>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
+
+    // Predefined course and type colors
+    const courseColors = {
+        'Introduction to Programming': '#4A90E2',
+        'Data Structures': '#50E3C2',
+        'Algorithms': '#F5A623',
+        'Database Systems': '#9013FE',
+        'Operating Systems': '#E94E77',
+        'Computer Networks': '#FF847C'
+    };
+
+    const typeColors = {
+        'Assignment': '#A0E7A0',
+        'Exam': '#F8BBD0',
+        'Quiz': '#BBDEFB'
+    };
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: {
@@ -105,30 +93,92 @@ document.addEventListener('DOMContentLoaded', function() {
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
         events: [
-            {% for assignment in upcoming_assignments %}
+            {% for item in schedule_items %}
             {
-                title: 'Assignment: {{ assignment.title }}',
-                start: '{{ assignment.due_date.strftime("%Y-%m-%d") }}',
-                classNames: ['bg-primary']
-            },
+                title: '{{ item.title }}',
+                start: '{{ item.date.strftime("%Y-%m-%d %H:%M:%S") }}',
+                type: '{{ item.type }}',
+                course: '{{ item.course.name }}',
+                description: '{{ item.description|default("No description available")|e }}'
+            }{% if not loop.last %},{% endif %}
             {% endfor %}
-            {% for exam in upcoming_exams %}
-            {
-                title: 'Exam: {{ exam.title }}',
-                start: '{{ exam.exam_date.strftime("%Y-%m-%d") }}',
-                classNames: ['bg-danger']
-            },
-            {% endfor %}
-            {% for quiz in upcoming_quizzes %}
-            {
-                title: 'Quiz: {{ quiz.title }}',
-                start: '{{ quiz.due_date.strftime("%Y-%m-%d") }}',
-                classNames: ['bg-warning']
-            },
-            {% endfor %}
-        ]
+        ],
+        eventDidMount: function(info) {
+            const courseColor = courseColors[info.event.extendedProps.course] || '#ccc';
+            const typeColor = typeColors[info.event.extendedProps.type] || '#ddd';
+            info.el.style.backgroundColor = courseColor;
+            info.el.style.borderColor = courseColor;
+            info.el.style.color = 'white';
+
+            // Add custom circle indicator for event type
+            const circle = document.createElement('span');
+            circle.className = 'event-circle';
+            circle.style.backgroundColor = typeColor;
+            circle.style.marginRight = '8px';
+            info.el.prepend(circle);
+        }
     });
+    
     calendar.render();
+
+    // View toggle buttons
+    document.getElementById('calendarView').addEventListener('click', function() {
+        this.classList.add('active');
+        document.getElementById('listView').classList.remove('active');
+        document.getElementById('calendar').style.display = 'block';
+        document.getElementById('listViewContainer').style.display = 'none';
+    });
+
+    document.getElementById('listView').addEventListener('click', function() {
+        this.classList.add('active');
+        document.getElementById('calendarView').classList.remove('active');
+        document.getElementById('calendar').style.display = 'none';
+        document.getElementById('listViewContainer').style.display = 'block';
+    });
 });
 </script>
-{% endblock %} 
+
+<style>
+/* Event Circle (Light Color for Event Type) */
+.event-circle {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+/* Calendar Event Styling */
+.fc-event {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px !important;
+    border: none !important;
+}
+
+/* List Item Styling */
+.list-group-item {
+    border-left: 4px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease-in-out;
+    color: white !important;
+}
+
+.list-group-item:hover {
+    transform: translateX(4px);
+}
+
+/* Badge Styles */
+.badge {
+    font-size: 0.9rem;
+    padding: 4px 8px;
+}
+
+.text-muted {
+    font-size: 0.85rem;
+}
+</style>
+{% endblock %}

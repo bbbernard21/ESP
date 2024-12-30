@@ -1,4 +1,8 @@
-{% extends "base.html" %}
+{% if current_user.role and current_user.role.name == 'STUDENT' %}
+    {% extends "student/base.html" %}
+{% else %}
+    {% extends "base.html" %}
+{% endif %}
 
 {% block content %}
 <div class="row">
@@ -14,7 +18,7 @@
                 {% if discussions %}
                 <div class="list-group">
                     {% for discussion in discussions %}
-                    <a href="{{ url_for('communication.discussion_detail', discussion_id=discussion.id) }}" 
+                    <a href="{{ url_for('student.discussion_detail', discussion_id=discussion.id) }}" 
                        class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
                             <h6 class="mb-1">{{ discussion.title }}</h6>
@@ -76,7 +80,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form method="POST" action="{{ url_for('communication.create_discussion', course_id=course_id) }}">
+                <form method="POST" action="{{ url_for('student.create_discussion', course_id=course_id) }}">
                     <div class="mb-3">
                         <label for="title" class="form-label">Discussion Title</label>
                         <input type="text" class="form-control" id="title" name="title" required>

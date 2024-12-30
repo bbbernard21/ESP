@@ -16,25 +16,10 @@
                 </li>
                 
                 <!-- Courses -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('student.courses') }}">
                         <i class="fas fa-book"></i> My Courses
                     </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('student.courses') }}">Course List</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.course_materials', course_id=course.id) if course else '#' }}">Course Materials</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.course_schedule', course_id=course.id) if course else '#' }}">Course Schedule</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        {% for course in current_user.enrolled_courses %}
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('academic.course_detail', course_id=course.id) }}">
-                                {{ course.code }} - {{ course.name }}
-                            </a>
-                        </li>
-                        {% endfor %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.schedule') }}">Course Schedule</a></li>
-                    </ul>
                 </li>
 
                 <!-- Assignments & Assessments -->
@@ -49,6 +34,7 @@
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('student.submissions') }}">My Submissions</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('student.grades') }}">My Grades</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.schedule') }}">My Schedule</a></li>
                     </ul>
                 </li>
 
@@ -58,9 +44,9 @@
                         <i class="fas fa-chart-line"></i> Progress
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('student.academic_progress') }}">Academic Progress</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.progress') }}">Academic Progress</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('student.goals') }}">Academic Goals</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.performance') }}">Performance Analytics</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.analytics') }}">Performance Analytics</a></li>
                     </ul>
                 </li>
 
@@ -68,10 +54,22 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-comments"></i> Communication
+                        {% if current_user.get_unread_messages_count() > 0 %}
+                            <span class="badge bg-danger">{{ current_user.get_unread_messages_count() }}</span>
+                        {% endif %}
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('student.messages') }}">Messages</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.notifications') }}">Notifications</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('communication.messages') }}">Messages
+                            {% if current_user.get_unread_messages_count() > 0 %}
+                                <span class="badge bg-danger">{{ current_user.get_unread_messages_count() }}</span>
+                            {% endif %}
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('communication.notifications') }}">Notifications
+                            {% if current_user.get_unread_notifications_count() > 0 %}
+                                <span class="badge bg-danger">{{ current_user.get_unread_notifications_count() }}</span>
+                            {% endif %}
+                        </a></li>
                         <li><a class="dropdown-item" href="{{ url_for('student.announcements') }}">Announcements</a></li>
                     </ul>
                 </li>

@@ -24,7 +24,7 @@
                                         From: {{ message.sender.first_name }} {{ message.sender.last_name }}
                                     {% endif %}
                                 </h6>
-                                <small>{{ message.sent_at.strftime('%Y-%m-%d') }}</small>
+                                <small>{{ message.timestamp.strftime('%Y-%m-%d') }}</small>
                             </div>
                             <p class="mb-1">{{ message.subject }}</p>
                             <small class="text-muted">
@@ -101,7 +101,7 @@ function showMessage(messageId) {
                         <div>
                             <strong>${data.message.sender_name}</strong> to <strong>${data.message.recipient_name}</strong>
                         </div>
-                        <small>${data.message.sent_at}</small>
+                        <small>${data.message.timestamp}</small>
                     </div>
                     <div class="message-body">
                         ${data.message.content}

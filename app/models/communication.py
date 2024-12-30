@@ -1,6 +1,22 @@
 from app import db
 from datetime import datetime
 
+class Message(db.Model):
+    __tablename__ = 'messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    read = db.Column(db.Boolean, default=False)
+    read_at = db.Column(db.DateTime)
+    
+    # Relationships
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='messages_sent')
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='messages_received')
+
 class Announcement(db.Model):
     __tablename__ = 'announcements'
     
@@ -30,21 +46,58 @@ class Conversation(db.Model):
     user2 = db.relationship('User', foreign_keys=[user2_id], backref='conversations_as_user2')
     messages = db.relationship('Message', backref='conversation', lazy='dynamic')
 
-class Message(db.Model):
-    __tablename__ = 'messages'
+class GroupChat(db.Model):
+    __tablename__ = 'group_chats'
     
     id = db.Column(db.Integer, primary_key=True)
-    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    read = db.Column(db.Boolean, default=False)
-    read_timestamp = db.Column(db.DateTime)
+    name = db.Column(db.String(128))  # For group chats
+    is_group = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     # Relationships
-    sender = db.relationship('User', foreign_keys=[sender_id], backref=db.backref('messages_sent', lazy='dynamic'), overlaps="sent_messages")
-    recipient = db.relationship('User', foreign_keys=[recipient_id], backref=db.backref('messages_received', lazy='dynamic'), overlaps="received_messages")
+    messages = db.relationship('ChatMessage', backref='chat', lazy='dynamic')
+    participants = db.relationship('ChatParticipant', backref='chat')
+    created_by = db.relationship('User', foreign_keys=[created_by_id])
+
+class ChatParticipant(db.Model):
+    __tablename__ = 'chat_participants'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    chat_id = db.Column(db.Integer, db.ForeignKey('group_chats.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)  # For group admins
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_read_at = db.Column(db.DateTime)
+    
+    # Relationship
+    user = db.relationship('User', backref='chat_memberships')
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    chat_id = db.Column(db.Integer, db.ForeignKey('group_chats.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # For tracking who has read the message in group chats
+    read_by = db.relationship('ChatMessageRead', backref='message')
+    
+    # Relationships
+    sender = db.relationship('User', backref='chat_messages_sent')
+
+class ChatMessageRead(db.Model):
+    __tablename__ = 'chat_message_reads'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    message_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    read_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    user = db.relationship('User', backref='chat_message_reads')
 
 class Discussion(db.Model):
     __tablename__ = 'discussions'

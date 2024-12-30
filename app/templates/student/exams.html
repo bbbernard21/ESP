@@ -17,7 +17,6 @@
                     <thead>
                         <tr>
                             <th>Title</th>
-                            <th>Type</th>
                             <th>Date</th>
                             <th>Duration</th>
                             <th>Status</th>
@@ -29,11 +28,6 @@
                         {% for exam in course_exams %}
                         <tr>
                             <td>{{ exam.title }}</td>
-                            <td>
-                                <span class="badge bg-{{ 'warning' if exam.exam_type == 'midterm' else 'success' }}">
-                                    {{ exam.exam_type|title }}
-                                </span>
-                            </td>
                             <td>{{ exam.exam_date.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>{{ exam.duration }} mins</td>
                             <td>

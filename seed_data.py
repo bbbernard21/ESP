@@ -41,8 +41,9 @@ def seed_database():
             'password_hash': generate_password_hash('admin123'),
             'first_name': 'Admin',
             'last_name': 'User',
-            'role': UserRole.ADMIN,
-            'is_active': True
+            'role': 'ADMIN',
+            'is_active': True,
+            'created_at': datetime.utcnow()
         },
         {
             'username': 'professor1',
@@ -50,8 +51,9 @@ def seed_database():
             'password_hash': generate_password_hash('prof123'),
             'first_name': 'John',
             'last_name': 'Smith',
-            'role': UserRole.PROFESSOR,
-            'is_active': True
+            'role': 'PROFESSOR',
+            'is_active': True,
+            'created_at': datetime.utcnow()
         },
         {
             'username': 'student1',
@@ -59,9 +61,10 @@ def seed_database():
             'password_hash': generate_password_hash('student123'),
             'first_name': 'Alice',
             'last_name': 'Johnson',
-            'role': UserRole.STUDENT,
+            'role': 'STUDENT',
             'program_id': 1,
-            'is_active': True
+            'is_active': True,
+            'created_at': datetime.utcnow()
         }
     ]
     

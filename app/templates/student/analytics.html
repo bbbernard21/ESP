@@ -1,0 +1,105 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Performance Analytics</h2>
+
+    {% if course_stats %}
+    <div class="row">
+        {% for stats in course_stats %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ stats.course.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Grade Statistics -->
+                    <div class="mb-4">
+                        <h6>Grade Statistics</h6>
+                        <div class="row">
+                            <div class="col-sm-6 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-0">{{ "%.1f"|format(stats.average_grade) }}%</h3>
+                                        <small class="text-muted">Average Grade</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-0">{{ stats.total_grades }}</h3>
+                                        <small class="text-muted">Total Assessments</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grade Range -->
+                    <div class="mb-4">
+                        <h6>Grade Range</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="mb-1">Highest Grade</p>
+                                <h4 class="text-success">{{ "%.1f"|format(stats.highest_grade) }}%</h4>
+                            </div>
+                            <div class="col-6">
+                                <p class="mb-1">Lowest Grade</p>
+                                <h4 class="text-danger">{{ "%.1f"|format(stats.lowest_grade) }}%</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grade Distribution -->
+                    <div>
+                        <h6>Grade Distribution</h6>
+                        <div class="progress" style="height: 25px;">
+                            {% set grade_ranges = {
+                                '90-100': {'count': 0, 'class': 'bg-success'},
+                                '80-89': {'count': 0, 'class': 'bg-info'},
+                                '70-79': {'count': 0, 'class': 'bg-warning'},
+                                '60-69': {'count': 0, 'class': 'bg-danger'},
+                                '0-59': {'count': 0, 'class': 'bg-secondary'}
+                            } %}
+                            {% for grade in stats.all_grades %}
+                                {% if grade >= 90 %}
+                                    {% set _ = grade_ranges['90-100'].update({'count': grade_ranges['90-100']['count'] + 1}) %}
+                                {% elif grade >= 80 %}
+                                    {% set _ = grade_ranges['80-89'].update({'count': grade_ranges['80-89']['count'] + 1}) %}
+                                {% elif grade >= 70 %}
+                                    {% set _ = grade_ranges['70-79'].update({'count': grade_ranges['70-79']['count'] + 1}) %}
+                                {% elif grade >= 60 %}
+                                    {% set _ = grade_ranges['60-69'].update({'count': grade_ranges['60-69']['count'] + 1}) %}
+                                {% else %}
+                                    {% set _ = grade_ranges['0-59'].update({'count': grade_ranges['0-59']['count'] + 1}) %}
+                                {% endif %}
+                            {% endfor %}
+                            {% for range, data in grade_ranges.items() %}
+                                {% if data.count > 0 %}
+                                    {% set percentage = (data.count / stats.total_grades * 100) %}
+                                    <div class="progress-bar {{ data.class }}" 
+                                         role="progressbar" 
+                                         style="width: {{ percentage }}%" 
+                                         aria-valuenow="{{ percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100"
+                                         title="{{ range }}%: {{ data.count }} grades">
+                                        {{ range }}%
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>No performance data available yet. Complete some assignments or exams to see your analytics.
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

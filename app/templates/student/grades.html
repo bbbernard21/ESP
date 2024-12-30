@@ -38,7 +38,14 @@
             <!-- Overall Course Grade -->
             <div class="row mb-4">
                 <div class="col-md-6">
-                    <h4>Current Grade: {{ "%.1f"|format(course.current_grade) }}%</h4>
+                    <h4>Current Grade: 
+                        {% if course.current_grade is not none %}
+                            {{ "%.1f"|format(course.current_grade) }}%
+                        {% else %}
+                            Not Available
+                        {% endif %}
+                    </h4>
+                    {% if course.current_grade is not none %}
                     <div class="progress" style="height: 20px;">
                         <div class="progress-bar bg-{{ 'success' if course.current_grade >= 80 else 'warning' if course.current_grade >= 60 else 'danger' }}" 
                              role="progressbar" 
@@ -49,6 +56,7 @@
                             {{ "%.1f"|format(course.current_grade) }}%
                         </div>
                     </div>
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <h4>Grade Distribution</h4>
@@ -86,35 +94,41 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for item in course.grade_items %}
-                        <tr>
-                            <td>{{ item.title }}</td>
-                            <td>
-                                <span class="badge bg-{{ 'primary' if item.type == 'assignment' else 'warning' if item.type == 'midterm' else 'success' }}">
-                                    {{ item.type|title }}
-                                </span>
-                            </td>
-                            <td>{{ item.due_date.strftime('%Y-%m-%d') }}</td>
-                            <td>
-                                {% if item.grade %}
-                                    {{ item.grade }}/{{ item.total_points }}
-                                    ({{ "%.1f"|format((item.grade/item.total_points)*100) }}%)
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>{{ item.weight }}%</td>
-                            <td>
-                                {% if item.type == 'assignment' %}
-                                <a href="{{ url_for('student.view_submission', submission_id=item.submission_id) }}" 
-                                   class="btn btn-sm btn-info">View Submission</a>
-                                {% elif item.type in ['midterm', 'final'] %}
-                                <a href="{{ url_for('student.view_exam', exam_id=item.exam_id) }}" 
-                                   class="btn btn-sm btn-info">View Exam</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
+                        {% if course.grade_items %}
+                            {% for item in course.grade_items %}
+                            <tr>
+                                <td>{{ item.title }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if item.type == 'assignment' else 'warning' if item.type == 'midterm' else 'success' }}">
+                                        {{ item.type|title }}
+                                    </span>
+                                </td>
+                                <td>{{ item.due_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if item.grade is not none %}
+                                        {{ item.grade }}/{{ item.total_points }}
+                                        ({{ "%.1f"|format((item.grade/item.total_points)*100) }}%)
+                                    {% else %}
+                                        Not Graded
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.weight }}%</td>
+                                <td>
+                                    {% if item.type == 'assignment' and item.submission_id %}
+                                    <a href="{{ url_for('student.view_submission', submission_id=item.submission_id) }}" 
+                                       class="btn btn-sm btn-info">View Submission</a>
+                                    {% elif item.type in ['midterm', 'final'] and item.exam_id %}
+                                    <a href="{{ url_for('student.view_exam', exam_id=item.exam_id) }}" 
+                                       class="btn btn-sm btn-info">View Exam</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">No graded items available</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>

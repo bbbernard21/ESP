@@ -3,7 +3,8 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from enum import Enum
-from app.models.communication import Message, Notification
+from app.models.communication import Message, ChatMessage, ChatMessageRead, ChatParticipant
+from app.models.communication import Notification
 
 class UserRole(Enum):
     STUDENT = 'STUDENT'
@@ -42,6 +43,13 @@ class User(UserMixin, db.Model):
                                       backref=db.backref('message_recipient', lazy='joined'),
                                       lazy='dynamic',
                                       overlaps="recipient,messages_received")
+    
+    # Chat relationships
+    chats = db.relationship('ChatParticipant', backref='participant', lazy='dynamic')
+    sent_chat_messages = db.relationship('ChatMessage',
+                                       foreign_keys='ChatMessage.sender_id',
+                                       backref=db.backref('chat_message_sender', lazy='joined'),
+                                       lazy='dynamic')
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -123,8 +131,27 @@ class User(UserMixin, db.Model):
         return self.notifications.filter_by(read=False).count()
     
     def get_unread_messages_count(self):
-        """Return the count of unread messages for the user"""
-        return self.received_messages.filter_by(read=False).count()
+        from app.models.communication import ChatMessage, ChatMessageRead, ChatParticipant, Message
+        
+        # Count unread direct messages
+        direct_unread = Message.query.filter_by(
+            recipient_id=self.id,
+            read=False
+        ).count()
+        
+        # Count unread group messages
+        group_unread = (ChatMessage.query
+            .join(ChatParticipant, ChatMessage.chat_id == ChatParticipant.chat_id)
+            .outerjoin(ChatMessageRead, 
+                (ChatMessageRead.message_id == ChatMessage.id) & 
+                (ChatMessageRead.user_id == self.id))
+            .filter(
+                ChatParticipant.user_id == self.id,
+                ChatMessage.sender_id != self.id,
+                ChatMessageRead.id.is_(None)
+            ).count())
+        
+        return direct_unread + group_unread
     
     def __repr__(self):
         return f'<User {self.username}>'

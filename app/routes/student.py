@@ -1,14 +1,15 @@
-import os
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, send_file
 from flask_login import login_required, current_user
-from app import db
-from app.models import Course, AcademicRecord, CourseMaterial, Assignment, Exam, AssignmentSubmission, ExamGrade
-from app.models.academic import AcademicGoal
-from app.models.communication import Message, Notification, Announcement
+import os
 from app.models.user import User, UserRole
+from app.models.academic import (
+    Course, AcademicRecord, Assignment, AssignmentSubmission, 
+    Quiz, QuizSubmission, Exam, ExamGrade, CourseMaterial, AcademicGoal
+)
+from app.models.communication import Message, Notification, Conversation, Announcement, Discussion, DiscussionPost
 from app.decorators import student_required
-from datetime import datetime
-from werkzeug.utils import secure_filename
+from app import db
+from datetime import datetime, timedelta
 
 student = Blueprint('student', __name__)
 
@@ -56,8 +57,8 @@ def dashboard():
             'course': assignment.course,
             'title': assignment.title,
             'due_date': assignment.due_date,
-            'action_url': url_for('student.submit_assignment', assignment_id=assignment.id),
-            'action_text': 'Submit'
+            'action_url': url_for('student.view_assignment', assignment_id=assignment.id),
+            'action_text': 'View'
         })
     
     for exam in pending_exams:
@@ -165,52 +166,22 @@ def course_detail(course_id):
     course = Course.query.get_or_404(course_id)
     
     # Verify enrollment
-    academic_record = AcademicRecord.query.filter_by(
+    enrollment = AcademicRecord.query.filter_by(
         student_id=current_user.id,
         course_id=course_id,
         status='enrolled'
     ).first_or_404()
     
-    # Get course materials
+    assignments = Assignment.query.filter_by(course_id=course_id).all()
+    exams = Exam.query.filter_by(course_id=course_id).all()
     materials = CourseMaterial.query.filter_by(course_id=course_id).all()
     
-    # Get assignments
-    assignments = Assignment.query.filter_by(course_id=course_id).all()
-    
-    # Get exams
-    exams = Exam.query.filter_by(course_id=course_id).all()
-    
-    # Calculate course completion percentage
-    total_items = len(materials) + len(assignments) + len(exams)
-    completed_items = 0
-    if total_items > 0:
-        # Count completed assignments
-        completed_assignments = AssignmentSubmission.query.filter_by(
-            student_id=current_user.id,
-            status='graded'
-        ).join(Assignment).filter(
-            Assignment.course_id == course_id
-        ).count()
-        
-        # Count completed exams
-        completed_exams = ExamGrade.query.filter_by(
-            student_id=current_user.id
-        ).join(Exam).filter(
-            Exam.course_id == course_id
-        ).count()
-        
-        completed_items = completed_assignments + completed_exams
-        course.completion_percentage = (completed_items / total_items) * 100
-    else:
-        course.completion_percentage = 0
-    
     return render_template('student/course_detail.html',
-                         title=f'{course.code} - {course.name}',
                          course=course,
-                         academic_record=academic_record,
-                         materials=materials,
                          assignments=assignments,
-                         exams=exams)
+                         exams=exams,
+                         materials=materials,
+                         now=datetime.utcnow())
 
 @student.route('/student/course/<int:course_id>/materials')
 @login_required
@@ -237,9 +208,8 @@ def course_materials(course_id):
 @student_required
 def goals():
     academic_goals = AcademicGoal.query.filter_by(
-        student_id=current_user.id,
-        status='active'
-    ).all()
+        student_id=current_user.id
+    ).order_by(AcademicGoal.target_date).all()
     
     return render_template('student/goals.html',
                          title='Academic Goals',
@@ -293,7 +263,7 @@ def update_goal(goal_id):
     
     return redirect(url_for('student.goals'))
 
-@student.route('/student/assignment/<int:assignment_id>/submit', methods=['GET', 'POST'])
+@student.route('/student/assignment/<int:assignment_id>/submit', methods=['POST'])
 @login_required
 @student_required
 def submit_assignment(assignment_id):
@@ -306,72 +276,99 @@ def submit_assignment(assignment_id):
         status='enrolled'
     ).first_or_404()
     
-    if request.method == 'POST':
-        try:
-            file = request.files['file']
-            if file:
-                filename = secure_filename(file.filename)
-                file_path = os.path.join('uploads', 'submissions', str(assignment_id), filename)
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                file.save(file_path)
-                
-                submission = AssignmentSubmission(
-                    assignment_id=assignment_id,
-                    student_id=current_user.id,
-                    file_path=file_path,
-                    submitted_at=datetime.utcnow(),
-                    status='submitted'
-                )
-                db.session.add(submission)
-                db.session.commit()
-                flash('Assignment submitted successfully!', 'success')
-                return redirect(url_for('student.course_details', course_id=assignment.course_id))
-        except Exception as e:
-            flash(f'Error submitting assignment: {str(e)}', 'error')
+    if 'submission_file' not in request.files:
+        flash('No file uploaded', 'error')
+        return redirect(url_for('student.view_assignment', assignment_id=assignment_id))
     
-    return render_template('student/submit_assignment.html',
-                         title='Submit Assignment',
-                         assignment=assignment)
+    file = request.files['submission_file']
+    if file.filename == '':
+        flash('No file selected', 'error')
+        return redirect(url_for('student.view_assignment', assignment_id=assignment_id))
+    
+    if file:
+        filename = secure_filename(file.filename)
+        submission_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'submissions', filename)
+        os.makedirs(os.path.dirname(submission_path), exist_ok=True)
+        file.save(submission_path)
+        
+        # Check for existing submission
+        existing_submission = AssignmentSubmission.query.filter_by(
+            student_id=current_user.id,
+            assignment_id=assignment_id
+        ).first()
+        
+        if existing_submission:
+            existing_submission.submission_file = filename
+            existing_submission.submitted_at = datetime.utcnow()
+            existing_submission.status = 'submitted'
+            db.session.commit()
+        else:
+            submission = AssignmentSubmission(
+                student_id=current_user.id,
+                assignment_id=assignment_id,
+                submission_file=filename,
+                submitted_at=datetime.utcnow(),
+                status='submitted'
+            )
+            db.session.add(submission)
+            db.session.commit()
+        
+        flash('Assignment submitted successfully', 'success')
+        return redirect(url_for('student.view_assignment', assignment_id=assignment_id))
+    
+    flash('Error uploading file', 'error')
+    return redirect(url_for('student.view_assignment', assignment_id=assignment_id))
 
 @student.route('/student/progress')
 @login_required
 @student_required
 def progress():
-    # Get all academic records
-    academic_records = AcademicRecord.query.filter_by(
-        student_id=current_user.id
+    # Get enrolled courses
+    enrolled_courses = Course.query.join(AcademicRecord).filter(
+        AcademicRecord.student_id == current_user.id,
+        AcademicRecord.status == 'enrolled'
     ).all()
     
     # Calculate overall GPA
+    academic_records = AcademicRecord.query.filter_by(
+        student_id=current_user.id,
+        status='enrolled'
+    ).all()
     grades = [r.grade for r in academic_records if r.grade is not None]
-    overall_gpa = sum(grades) / len(grades) if grades else 0
-    
-    # Get progress by course
-    course_progress = []
-    for record in academic_records:
-        course = record.course
-        assignments = Assignment.query.filter_by(course_id=course.id).all()
-        submissions = AssignmentSubmission.query.filter_by(
+    overall_gpa = sum(grades) / len(grades) if grades else 0.0
+
+    # Calculate progress for each course
+    for course in enrolled_courses:
+        # Get current grade
+        record = AcademicRecord.query.filter_by(
             student_id=current_user.id,
-            status='graded'
-        ).join(Assignment).filter(
-            Assignment.course_id == course.id
-        ).all()
-        
-        total_assignments = len(assignments)
-        completed_assignments = len(submissions)
-        
-        progress = {
-            'course': course,
-            'grade': record.grade,
-            'completion_rate': (completed_assignments / total_assignments * 100) if total_assignments > 0 else 0
-        }
-        course_progress.append(progress)
-    
+            course_id=course.id
+        ).first()
+        course.current_grade = record.grade if record and record.grade is not None else None
+
+        # Count assignments
+        course.total_assignments = Assignment.query.filter_by(course_id=course.id).count()
+        course.completed_assignments = AssignmentSubmission.query.join(Assignment).filter(
+            Assignment.course_id == course.id,
+            AssignmentSubmission.student_id == current_user.id,
+            AssignmentSubmission.status == 'graded'
+        ).count()
+
+        # Count exams
+        course.total_exams = Exam.query.filter_by(course_id=course.id).count()
+        course.completed_exams = ExamGrade.query.join(Exam).filter(
+            Exam.course_id == course.id,
+            ExamGrade.student_id == current_user.id
+        ).count()
+
+        # Count quizzes
+        course.total_quizzes = Quiz.query.filter_by(course_id=course.id).count()
+        course.completed_quizzes = 0  # You'll need to implement quiz completion tracking
+
     return render_template('student/progress.html',
                          title='Academic Progress',
-                         overall_gpa=overall_gpa,
-                         course_progress=course_progress)
+                         enrolled_courses=enrolled_courses,
+                         overall_gpa=overall_gpa)
 
 @student.route('/student/analytics')
 @login_required
@@ -417,24 +414,13 @@ def analytics():
 @student_required
 def view_exam(exam_id):
     exam = Exam.query.get_or_404(exam_id)
-    
-    # Verify enrollment
-    enrollment = AcademicRecord.query.filter_by(
+    exam_grade = ExamGrade.query.filter_by(
         student_id=current_user.id,
-        course_id=exam.course_id,
-        status='enrolled'
-    ).first_or_404()
-    
-    # Get student's grade if exam is graded
-    grade = ExamGrade.query.filter_by(
-        exam_id=exam_id,
-        student_id=current_user.id
+        exam_id=exam_id
     ).first()
-    
-    return render_template('student/view_exam.html',
-                         title='View Exam',
-                         exam=exam,
-                         grade=grade)
+    return render_template('student/view_exam.html', 
+                         exam=exam, 
+                         exam_grade=exam_grade)
 
 @student.route('/student/assignments')
 @login_required
@@ -452,7 +438,8 @@ def assignments():
     return render_template('student/assignments.html',
                          title='My Assignments',
                          assignments=assignments,
-                         courses=enrolled_courses)
+                         courses=enrolled_courses,
+                         now=datetime.utcnow())
 
 @student.route('/student/quizzes')
 @login_required
@@ -488,7 +475,9 @@ def exams():
     return render_template('student/exams.html',
                          title='My Exams',
                          exams=exams,
-                         courses=enrolled_courses)
+                         courses=enrolled_courses,
+                         now=datetime.utcnow(),
+                         timedelta=timedelta)
 
 @student.route('/student/submissions')
 @login_required
@@ -511,6 +500,14 @@ def grades():
         AcademicRecord.status == 'enrolled'
     ).all()
     
+    # Calculate overall GPA
+    academic_records = AcademicRecord.query.filter_by(
+        student_id=current_user.id,
+        status='enrolled'
+    ).all()
+    grades_list = [r.grade for r in academic_records if r.grade is not None]
+    overall_gpa = sum(grades_list) / len(grades_list) if grades_list else 0.0
+    
     for course in enrolled_courses:
         # Get assignment grades
         assignment_grades = AssignmentSubmission.query.join(Assignment).filter(
@@ -525,14 +522,50 @@ def grades():
             ExamGrade.student_id == current_user.id
         ).all()
         
-        course.grades = {
-            'assignments': assignment_grades,
-            'exams': exam_grades
-        }
+        # Calculate course grade
+        record = AcademicRecord.query.filter_by(
+            student_id=current_user.id,
+            course_id=course.id
+        ).first()
+        course.current_grade = record.grade if record and record.grade is not None else None
+        
+        # Prepare grade items list
+        grade_items = []
+        
+        # Add assignments to grade items
+        for submission in assignment_grades:
+            if hasattr(submission, 'assignment') and submission.assignment:
+                grade_items.append({
+                    'title': submission.assignment.title,
+                    'type': 'assignment',
+                    'due_date': submission.assignment.due_date,
+                    'grade': submission.grade,
+                    'total_points': submission.assignment.total_points,
+                    'weight': submission.assignment.weight,
+                    'submission_id': submission.id
+                })
+        
+        # Add exams to grade items
+        for grade in exam_grades:
+            if hasattr(grade, 'exam') and grade.exam:
+                grade_items.append({
+                    'title': grade.exam.title,
+                    'type': grade.exam.exam_type,
+                    'due_date': grade.exam.exam_date,
+                    'grade': grade.grade,
+                    'total_points': grade.exam.total_points,
+                    'weight': grade.exam.weight,
+                    'exam_id': grade.exam_id
+                })
+        
+        # Sort grade items by due date
+        grade_items.sort(key=lambda x: x['due_date'])
+        course.grade_items = grade_items
     
     return render_template('student/grades.html',
                          title='My Grades',
-                         courses=enrolled_courses)
+                         courses=enrolled_courses,
+                         overall_gpa=overall_gpa)
 
 @student.route('/student/academic_progress')
 @login_required
@@ -550,18 +583,7 @@ def performance():
 @login_required
 @student_required
 def messages():
-    received_messages = Message.query.filter_by(
-        recipient_id=current_user.id
-    ).order_by(Message.sent_at.desc()).all()
-    
-    sent_messages = Message.query.filter_by(
-        sender_id=current_user.id
-    ).order_by(Message.sent_at.desc()).all()
-    
-    return render_template('student/messages.html',
-                         title='Messages',
-                         received_messages=received_messages,
-                         sent_messages=sent_messages)
+    return redirect(url_for('communication.messages'))
 
 @student.route('/student/notifications')
 @login_required
@@ -579,19 +601,19 @@ def notifications():
 @login_required
 @student_required
 def announcements():
-    enrolled_courses = Course.query.join(AcademicRecord).filter(
-        AcademicRecord.student_id == current_user.id,
-        AcademicRecord.status == 'enrolled'
-    ).all()
+    # Get announcements for courses the student is enrolled in
+    announcements = (Announcement.query
+        .join(Course)
+        .join(AcademicRecord)
+        .filter(
+            AcademicRecord.student_id == current_user.id,
+            AcademicRecord.status == 'active'
+        )
+        .order_by(Announcement.created_at.desc())
+        .all())
     
-    announcements = Announcement.query.join(Course).join(AcademicRecord).filter(
-        AcademicRecord.student_id == current_user.id
-    ).order_by(Announcement.created_at.desc()).all()
-    
-    return render_template('student/announcements.html',
-                         title='Announcements',
-                         announcements=announcements,
-                         courses=enrolled_courses)
+    return render_template('student/announcements.html', 
+                         announcements=announcements)
 
 @student.route('/student/help')
 @login_required
@@ -740,36 +762,70 @@ def search_help():
 @login_required
 @student_required
 def schedule():
-    # Get enrolled courses
+    # Get all enrolled courses for the student using the proper query
     enrolled_courses = Course.query.join(AcademicRecord).filter(
         AcademicRecord.student_id == current_user.id,
         AcademicRecord.status == 'enrolled'
     ).all()
-    
-    # Get upcoming assignments
-    upcoming_assignments = Assignment.query.join(Course).join(AcademicRecord).filter(
-        AcademicRecord.student_id == current_user.id,
-        Assignment.due_date > datetime.utcnow()
-    ).order_by(Assignment.due_date).all()
-    
-    # Get upcoming exams
-    upcoming_exams = Exam.query.join(Course).join(AcademicRecord).filter(
-        AcademicRecord.student_id == current_user.id,
-        Exam.exam_date > datetime.utcnow()
-    ).order_by(Exam.exam_date).all()
-    
-    # Get upcoming quizzes
-    upcoming_quizzes = Quiz.query.join(Course).join(AcademicRecord).filter(
-        AcademicRecord.student_id == current_user.id,
-        Quiz.due_date > datetime.utcnow()
-    ).order_by(Quiz.due_date).all()
-    
+
+    # Initialize list to store all schedule items
+    schedule_items = []
+
+    # Get current datetime for status comparison
+    now = datetime.utcnow()
+
+    for course in enrolled_courses:
+        # Add assignments
+        for assignment in course.assignments:
+            status = get_item_status(assignment.due_date, now)
+            schedule_items.append({
+                'type': 'Assignment',
+                'title': assignment.title,
+                'description': assignment.description,
+                'date': assignment.due_date,
+                'course': course,
+                'status': status
+            })
+        
+        # Add exams
+        for exam in course.exams:
+            status = get_item_status(exam.exam_date, now)
+            schedule_items.append({
+                'type': 'Exam',
+                'title': exam.title,
+                'description': f'Exam for {course.name}',
+                'date': exam.exam_date,
+                'course': course,
+                'status': status
+            })
+        
+        # Add quizzes
+        for quiz in course.quizzes:
+            status = get_item_status(quiz.due_date, now)
+            schedule_items.append({
+                'type': 'Quiz',
+                'title': quiz.title,
+                'description': f'Quiz for {course.name}',
+                'date': quiz.due_date,
+                'course': course,
+                'status': status
+            })
+
+    # Sort all items by date
+    schedule_items.sort(key=lambda x: x['date'])
+
     return render_template('student/schedule.html',
                          title='Course Schedule',
-                         courses=enrolled_courses,
-                         upcoming_assignments=upcoming_assignments,
-                         upcoming_exams=upcoming_exams,
-                         upcoming_quizzes=upcoming_quizzes)
+                         schedule_items=schedule_items)
+
+def get_item_status(date, now):
+    """Helper function to determine the status of a schedule item."""
+    if date < now:
+        return 'Past Due'
+    elif date < now + timedelta(days=7):
+        return 'Upcoming'
+    else:
+        return 'Pending'
 
 @student.route('/student/courses')
 @login_required
@@ -800,24 +856,22 @@ def download_material(material_id):
     material = CourseMaterial.query.get_or_404(material_id)
     
     # Verify enrollment
-    AcademicRecord.query.filter_by(
+    enrollment = AcademicRecord.query.filter_by(
         student_id=current_user.id,
         course_id=material.course_id,
         status='enrolled'
     ).first_or_404()
     
     # Get the file path
-    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], material.file_path)
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'materials', material.file_path)
     
     if not os.path.exists(file_path):
-        flash('Material file not found.', 'error')
-        return redirect(url_for('student.course_materials', course_id=material.course_id))
+        flash('Material file not found', 'error')
+        return redirect(url_for('student.course_detail', course_id=material.course_id))
     
-    return send_file(
-        file_path,
-        as_attachment=True,
-        download_name=material.file_name
-    )
+    return send_file(file_path,
+                    as_attachment=True,
+                    download_name=material.file_path)
 
 @student.route('/student/course/<int:course_id>/schedule')
 @login_required
@@ -826,40 +880,222 @@ def course_schedule(course_id):
     course = Course.query.get_or_404(course_id)
     
     # Verify enrollment
-    AcademicRecord.query.filter_by(
+    enrollment = AcademicRecord.query.filter_by(
         student_id=current_user.id,
         course_id=course_id,
         status='enrolled'
     ).first_or_404()
     
-    # Get assignments
-    assignments = Assignment.query.filter_by(course_id=course_id).all()
+    # Get all scheduled items for this course
+    assignments = Assignment.query.filter_by(course_id=course_id).order_by(Assignment.due_date).all()
+    exams = Exam.query.filter_by(course_id=course_id).order_by(Exam.exam_date).all()
     
-    # Get exams
-    exams = Exam.query.filter_by(course_id=course_id).all()
+    # Combine all scheduled items
+    schedule_items = []
     
-    # Create a list of events for the calendar
-    events = []
-    
-    # Add assignments
+    # Add assignments to schedule
     for assignment in assignments:
-        events.append({
-            'title': f'Assignment: {assignment.title}',
-            'start': assignment.due_date.strftime('%Y-%m-%d'),
-            'url': url_for('student.view_assignment', assignment_id=assignment.id),
-            'className': 'bg-primary'
+        schedule_items.append({
+            'type': 'Assignment',
+            'title': assignment.title,
+            'date': assignment.due_date,
+            'description': assignment.description,
+            'status': 'Pending' if assignment.due_date > datetime.utcnow() else 'Past Due'
         })
     
-    # Add exams
+    # Add exams to schedule
     for exam in exams:
-        events.append({
-            'title': f'Exam: {exam.title}',
-            'start': exam.exam_date.strftime('%Y-%m-%d'),
-            'url': url_for('student.view_exam', exam_id=exam.id),
-            'className': 'bg-danger'
+        schedule_items.append({
+            'type': 'Exam',
+            'title': exam.title,
+            'date': exam.exam_date,
+            'description': exam.description,
+            'status': 'Upcoming' if exam.exam_date > datetime.utcnow() else 'Completed'
         })
+    
+    # Sort all items by date
+    schedule_items.sort(key=lambda x: x['date'])
     
     return render_template('student/course_schedule.html',
                          title=f'{course.name} - Schedule',
                          course=course,
-                         events=events) 
+                         schedule_items=schedule_items,
+                         now=datetime.utcnow())
+
+@student.route('/student/assignment/<int:assignment_id>')
+@login_required
+@student_required
+def view_assignment(assignment_id):
+    assignment = Assignment.query.get_or_404(assignment_id)
+    submission = AssignmentSubmission.query.filter_by(
+        student_id=current_user.id,
+        assignment_id=assignment_id
+    ).first()
+    return render_template('student/view_assignment.html', 
+                         assignment=assignment, 
+                         submission=submission,
+                         now=datetime.utcnow())
+
+@student.route('/student/goals/add', methods=['POST'])
+@login_required
+@student_required
+def add_goal():
+    title = request.form.get('title')
+    description = request.form.get('description')
+    target_date = datetime.strptime(request.form.get('target_date'), '%Y-%m-%d')
+    
+    goal = AcademicGoal(
+        student_id=current_user.id,
+        title=title,
+        description=description,
+        target_date=target_date,
+        status='in_progress'
+    )
+    
+    db.session.add(goal)
+    db.session.commit()
+    
+    flash('Academic goal added successfully!', 'success')
+    return redirect(url_for('student.goals')) 
+
+@student.route('/student/new_message')
+@login_required
+@student_required
+def new_message():
+    return redirect(url_for('communication.messages'))
+
+@student.route('/student/view_message/<int:message_id>')
+@login_required
+@student_required
+def view_message(message_id):
+    return redirect(url_for('communication.messages'))
+
+@student.route('/student/reply_message/<int:message_id>')
+@login_required
+@student_required
+def reply_message(message_id):
+    return redirect(url_for('communication.messages'))
+
+@student.route('/student/send_message', methods=['POST'])
+@login_required
+@student_required
+def send_message():
+    return redirect(url_for('communication.send_message'))
+
+@student.route('/student/delete_message/<int:message_id>')
+@login_required
+@student_required
+def delete_message(message_id):
+    return redirect(url_for('communication.messages')) 
+
+@student.route('/student/course/<int:course_id>/discussions')
+@login_required
+@student_required
+def course_discussions(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # Verify enrollment
+    enrollment = AcademicRecord.query.filter_by(
+        student_id=current_user.id,
+        course_id=course_id,
+        status='enrolled'
+    ).first_or_404()
+    
+    discussions = Discussion.query.filter_by(course_id=course_id).order_by(Discussion.created_at.desc()).all()
+    
+    return render_template('communication/discussions.html',
+                         course=course,
+                         discussions=discussions,
+                         course_id=course_id)
+
+@student.route('/student/discussion/<int:discussion_id>')
+@login_required
+@student_required
+def discussion_detail(discussion_id):
+    discussion = Discussion.query.get_or_404(discussion_id)
+    
+    # Verify enrollment in the course
+    enrollment = AcademicRecord.query.filter_by(
+        student_id=current_user.id,
+        course_id=discussion.course_id,
+        status='enrolled'
+    ).first_or_404()
+    
+    posts = discussion.posts.order_by(DiscussionPost.created_at).all()
+    
+    return render_template('communication/discussion_detail.html',
+                         discussion=discussion,
+                         posts=posts)
+
+@student.route('/student/discussion/<int:discussion_id>/post', methods=['POST'])
+@login_required
+@student_required
+def add_discussion_post(discussion_id):
+    discussion = Discussion.query.get_or_404(discussion_id)
+    
+    # Verify enrollment in the course
+    enrollment = AcademicRecord.query.filter_by(
+        student_id=current_user.id,
+        course_id=discussion.course_id,
+        status='enrolled'
+    ).first_or_404()
+    
+    content = request.form.get('content')
+    parent_id = request.form.get('parent_id')
+    
+    if not content:
+        flash('Post content is required.', 'error')
+        return redirect(url_for('student.discussion_detail', discussion_id=discussion_id))
+    
+    post = DiscussionPost(
+        content=content,
+        discussion_id=discussion_id,
+        author_id=current_user.id,
+        parent_id=parent_id if parent_id else None
+    )
+    
+    db.session.add(post)
+    db.session.commit()
+    
+    flash('Your post has been added.', 'success')
+    return redirect(url_for('student.discussion_detail', discussion_id=discussion_id))
+
+@student.route('/student/course/<int:course_id>/create_discussion', methods=['POST'])
+@login_required
+@student_required
+def create_discussion(course_id):
+    course = Course.query.get_or_404(course_id)
+    
+    # Verify enrollment
+    enrollment = AcademicRecord.query.filter_by(
+        student_id=current_user.id,
+        course_id=course_id,
+        status='enrolled'
+    ).first_or_404()
+    
+    title = request.form.get('title')
+    content = request.form.get('content')
+    
+    if not title or not content:
+        flash('Both title and content are required.', 'error')
+        return redirect(url_for('student.course_discussions', course_id=course_id))
+    
+    discussion = Discussion(
+        title=title,
+        course_id=course_id,
+        created_by=current_user.id
+    )
+    db.session.add(discussion)
+    db.session.commit()
+    
+    # Create the initial post
+    post = DiscussionPost(
+        content=content,
+        discussion_id=discussion.id,
+        author_id=current_user.id
+    )
+    db.session.add(post)
+    db.session.commit()
+    
+    flash('Discussion created successfully.', 'success')
+    return redirect(url_for('student.discussion_detail', discussion_id=discussion.id)) 

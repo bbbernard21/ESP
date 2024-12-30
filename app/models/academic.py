@@ -95,6 +95,13 @@ class Assignment(db.Model):
     weight = db.Column(db.Float, default=1.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def get_submission(self, student_id):
+        """Get the submission for this assignment by the given student."""
+        return AssignmentSubmission.query.filter_by(
+            student_id=student_id,
+            assignment_id=self.id
+        ).first()
+
 class AssignmentSubmission(db.Model):
     __tablename__ = 'assignment_submissions'
     
@@ -127,6 +134,13 @@ class Exam(db.Model):
     total_points = db.Column(db.Float, default=100.0)
     weight = db.Column(db.Float, default=1.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def get_grade(self, student_id):
+        """Get the grade for this exam by the given student."""
+        return ExamGrade.query.filter_by(
+            student_id=student_id,
+            exam_id=self.id
+        ).first()
 
 class ExamGrade(db.Model):
     __tablename__ = 'exam_grades'

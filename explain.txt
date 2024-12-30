@@ -1,0 +1,86 @@
+Python Files (.py):
+Main application files (run.py, config.py)
+Model files (academic.py, user.py, etc.)
+Route files
+Utility files (tasks.py, scheduler.py)
+HTML Files (.html):
+Template files in app/templates directory
+base.html and various template files in subdirectories
+CSS Files (.css):
+Located in app/static/css directory
+For styling the web interface
+JavaScript Files (.js):
+Located in app/static/js directory
+For frontend functionality
+Configuration Files:
+.env (Environment variables)
+.gitignore (Git configuration)
+requirements.txt (Python dependencies)
+Documentation Files:
+README.md (Markdown documentation)
+Database Files:
+.db files (SQLite database files in instance directory)
+Cache Files:
+.pyc files (in pycache directories)
+Generated Python bytecode files
+Migration Files:
+Located in migrations directory
+Database migration scripts
+
+Python Files (.py):
+a) Main Application Files:
+run.py: The entry point of your application. It creates the Flask app instance and runs the server
+config.py: Contains all configuration settings like database URLs, secret keys, and other app settings
+b) Model Files (in app/models/):
+Define your database structure using SQLAlchemy ORM
+Examples:
+academic.py: Handles courses, grades, assignments
+user.py: Manages user accounts and profiles
+communication.py: Handles messages and notifications
+These files define how your data is stored and related
+c) Route Files (in app/routes/):
+Handle HTTP requests (GET, POST, etc.)
+Define what happens when users visit different URLs
+Connect the frontend (templates) with the backend (models)
+HTML Files (.html) (in app/templates/):
+These are your frontend templates using Jinja2 templating
+base.html: The main template that other templates extend
+Organized in subdirectories by feature:
+auth/: Login, registration pages
+academic/: Course, grade views
+student/: Student-specific pages
+professor/: Professor-specific pages
+CSS Files (.css) (in app/static/css/):
+Style your HTML templates
+Make your web pages look good and responsive
+Handle layout, colors, fonts, and animations
+JavaScript Files (.js) (in app/static/js/):
+Add interactivity to your web pages
+Handle client-side validations
+Make AJAX calls to your backend
+Update page content dynamically
+How They Work Together:
+1. Data Flow:
+Models (Python) ⟷ Routes (Python) ⟷ Templates (HTML) ⟷ Static Files (CSS/JS)
+Example: When viewing a course:
+1. Route (routes/academic.py) receives request
+Gets data from model (models/academic.py)
+Sends data to template (templates/academic/course.html)
+4. Template uses CSS/JS for presentation and interaction
+Dependencies:
+HTML templates depend on CSS for styling
+HTML templates use JavaScript for interactivity
+Routes depend on Models for data access
+All Python files depend on configuration settings
+Functionality Flow Example:
+When a student submits an assignment:
+JavaScript validates the form
+Route receives the submission
+Model saves it to database
+Template shows success message
+CSS styles the message
+JavaScript might update the page dynamically
+This structure follows the MVC (Model-View-Controller) pattern, where:
+Models (Python): Handle data and business logic
+Views (HTML/CSS): Present information to users
+Controllers (Routes): Coordinate between models and views

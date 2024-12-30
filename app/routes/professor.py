@@ -5,7 +5,7 @@ from app.models.academic import (
     Course, Assignment, AssignmentSubmission, Exam, ExamGrade, 
     CourseMaterial, AcademicRecord, Quiz, QuizSubmission
 )
-from app.models.communication import Announcement, Notification, Message
+from app.models.communication import Message, Announcement, Notification
 from app.models.user import User, UserRole
 from app.decorators import professor_required
 from datetime import datetime
@@ -100,7 +100,7 @@ def dashboard():
     # Get recent messages
     recent_messages = Message.query.filter_by(
         recipient_id=current_user.id
-    ).order_by(Message.sent_at.desc()).limit(5).all()
+    ).order_by(Message.timestamp.desc()).limit(5).all()
     
     # Get announcements
     announcements = Announcement.query.join(Course).filter(

@@ -1,0 +1,100 @@
+{% extends "student/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ assignment.title }}</h4>
+                    <a href="{{ url_for('student.course_detail', course_id=assignment.course_id) }}" 
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Course
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p>{{ assignment.description }}</p>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Due Date:</strong> {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Total Points:</strong> {{ assignment.total_points }}</p>
+                            <p><strong>Weight:</strong> {{ assignment.weight }}%</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Course:</strong> {{ assignment.course.name }}</p>
+                            <p><strong>Status:</strong> 
+                                {% if submission %}
+                                    {% if submission.status == 'graded' %}
+                                        <span class="badge bg-success">Graded</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Submitted</span>
+                                    {% endif %}
+                                {% else %}
+                                    {% if assignment.due_date < now %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if submission and submission.status == 'graded' %}
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">Grade</h5>
+                        <p class="mb-0">
+                            <strong>Score:</strong> {{ submission.grade }}/{{ assignment.total_points }}
+                            ({{ "%.1f"|format(submission.grade / assignment.total_points * 100) }}%)
+                        </p>
+                        {% if submission.feedback %}
+                        <hr>
+                        <h6>Feedback</h6>
+                        <p class="mb-0">{{ submission.feedback }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if not submission or submission.status != 'graded' %}
+                    <div class="mt-4">
+                        <h5>Submit Assignment</h5>
+                        <form method="POST" enctype="multipart/form-data" 
+                              action="{{ url_for('student.submit_assignment', assignment_id=assignment.id) }}">
+                            <div class="mb-3">
+                                <label for="submission_file" class="form-label">Upload File</label>
+                                <input type="file" class="form-control" id="submission_file" 
+                                       name="submission_file" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-1"></i> Submit Assignment
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Submission Guidelines -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Submission Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i> Submit before the due date</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Follow file format requirements</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Ensure all required sections are complete</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Review before submission</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

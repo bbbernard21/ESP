@@ -168,7 +168,7 @@
                                 <div class="list-group-item">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1">{{ message.sender.first_name }} {{ message.sender.last_name }}</h6>
-                                        <small>{{ message.sent_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                        <small>{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
                                     </div>
                                     <p class="mb-1">{{ message.subject }}</p>
                                     <small>{{ message.content[:100] }}{% if message.content|length > 100 %}...{% endif %}</small>

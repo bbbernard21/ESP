@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.models.academic import AcademicRecord, Course, AcademicGoal
-from app.models.communication import Notification, Message
+from app.models.communication import Message, Notification
 from app import db
 
 main = Blueprint('main', __name__)

@@ -1,51 +1,134 @@
 {% extends "student/base.html" %}
 
-{% block styles %}
-{{ super() }}
-<link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.css" rel="stylesheet" />
-{% endblock %}
-
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">{{ course.name }} - Schedule</h4>
-                    <a href="{{ url_for('student.course_detail', course_id=course.id) }}" 
-                       class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i> Back to Course
-                    </a>
+    <!-- Header with title and buttons -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ course.name }} - Schedule</h2>
+        <div class="btn-group">
+            <button class="btn btn-primary active" id="calendarView">
+                <i class="fas fa-calendar"></i> Calendar
+            </button>
+            <button class="btn btn-outline-primary" id="listView">
+                <i class="fas fa-list"></i> List
+            </button>
+            <a href="{{ url_for('student.course_detail', course_id=course.id) }}" 
+               class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Course
+            </a>
+        </div>
+    </div>
+
+    <!-- Calendar View -->
+    <div id="calendar"></div>
+
+    <!-- List View -->
+    <div id="listViewContainer" style="display: none;">
+        <div class="list-group">
+            {% for item in schedule_items|sort(attribute='date') %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-1">
+                        <span class="badge {% if item.type == 'Assignment' %}bg-success{% else %}bg-danger{% endif %} me-2">
+                            {{ item.type }}
+                        </span>
+                        {{ item.title }}
+                    </h5>
+                    <small class="text-muted">{{ item.status }}</small>
                 </div>
-                <div class="card-body">
-                    <div id="calendar"></div>
-                </div>
+                <p class="mb-1">{{ item.description|default("No description available") }}</p>
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i> 
+                    {{ item.date.strftime('%B %d, %Y at %I:%M %p') }}
+                </small>
             </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
-<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core/main.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid/main.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     var calendar = new FullCalendar.Calendar(calendarEl, {
-        plugins: ['dayGrid'],
         initialView: 'dayGridMonth',
-        events: {{ events|tojson|safe }},
-        eventClick: function(info) {
-            if (info.event.url) {
-                window.location.href = info.event.url;
-                return false;
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: [
+            {% for item in schedule_items %}
+            {
+                title: '{{ item.title }}',
+                start: '{{ item.date.strftime("%Y-%m-%d %H:%M:%S") }}',
+                type: '{{ item.type }}',
+                description: '{{ item.description|default("No description available")|e }}',
+                status: '{{ item.status }}',
+                className: '{{ item.type|lower }}-event'
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        eventDidMount: function(info) {
+            if (info.event.extendedProps.type === 'Assignment') {
+                info.el.style.backgroundColor = '#4CAF50';
+            } else if (info.event.extendedProps.type === 'Exam') {
+                info.el.style.backgroundColor = '#f44336';
             }
         }
     });
+    
     calendar.render();
+
+    // View toggle buttons
+    document.getElementById('calendarView').addEventListener('click', function() {
+        this.classList.add('active');
+        this.classList.remove('btn-outline-primary');
+        this.classList.add('btn-primary');
+        document.getElementById('listView').classList.remove('active');
+        document.getElementById('listView').classList.remove('btn-primary');
+        document.getElementById('listView').classList.add('btn-outline-primary');
+        document.getElementById('calendar').style.display = 'block';
+        document.getElementById('listViewContainer').style.display = 'none';
+    });
+
+    document.getElementById('listView').addEventListener('click', function() {
+        this.classList.add('active');
+        this.classList.remove('btn-outline-primary');
+        this.classList.add('btn-primary');
+        document.getElementById('calendarView').classList.remove('active');
+        document.getElementById('calendarView').classList.remove('btn-primary');
+        document.getElementById('calendarView').classList.add('btn-outline-primary');
+        document.getElementById('calendar').style.display = 'none';
+        document.getElementById('listViewContainer').style.display = 'block';
+    });
 });
 </script>
-{% endblock %} 
+
+<style>
+.fc-daygrid-day {
+    height: 100px !important;
+}
+.assignment-event {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+    color: white;
+}
+.exam-event {
+    background-color: #f44336;
+    border-color: #f44336;
+    color: white;
+}
+.list-group-item {
+    border-left: 4px solid #dee2e6;
+}
+.list-group-item:has(.bg-success) {
+    border-left-color: #4CAF50;
+}
+.list-group-item:has(.bg-danger) {
+    border-left-color: #f44336;
+}
+</style>
+{% endblock %}

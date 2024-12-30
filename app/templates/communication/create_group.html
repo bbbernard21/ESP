@@ -1,0 +1,47 @@
+{% if current_user.role and current_user.role.name == 'STUDENT' %}
+    {% extends "student/base.html" %}
+{% else %}
+    {% extends "base.html" %}
+{% endif %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Create New Group Chat</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Group Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Select Participants</label>
+                            <div class="list-group">
+                                {% for user in available_users %}
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-1" type="checkbox" name="participants" value="{{ user.id }}">
+                                        {{ user.first_name }} {{ user.last_name }}
+                                        {% if user.role.name == 'PROFESSOR' %}
+                                            <span class="badge bg-primary">Professor</span>
+                                        {% endif %}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Group</button>
+                            <a href="{{ url_for('communication.messages') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
