@@ -863,7 +863,7 @@ def download_material(material_id):
     ).first_or_404()
     
     # Get the file path
-    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'materials', material.file_path)
+    file_path = os.path.join(current_app.root_path, 'static', material.file_path)
     
     if not os.path.exists(file_path):
         flash('Material file not found', 'error')
@@ -871,7 +871,7 @@ def download_material(material_id):
     
     return send_file(file_path,
                     as_attachment=True,
-                    download_name=material.file_path)
+                    download_name=os.path.basename(material.file_path))
 
 @student.route('/student/course/<int:course_id>/schedule')
 @login_required
@@ -1083,7 +1083,7 @@ def create_discussion(course_id):
     discussion = Discussion(
         title=title,
         course_id=course_id,
-        created_by=current_user.id
+        author_id=current_user.id
     )
     db.session.add(discussion)
     db.session.commit()

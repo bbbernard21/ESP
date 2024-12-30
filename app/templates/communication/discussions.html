@@ -1,71 +1,78 @@
-{% if current_user.role and current_user.role.name == 'STUDENT' %}
+{% if current_user.role == 'STUDENT' %}
     {% extends "student/base.html" %}
 {% else %}
     {% extends "base.html" %}
 {% endif %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Course Discussions</h4>
-                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newDiscussionModal">
-                    <i class="fas fa-plus me-1"></i> New Discussion
-                </button>
-            </div>
-            <div class="card-body">
-                {% if discussions %}
-                <div class="list-group">
-                    {% for discussion in discussions %}
-                    <a href="{{ url_for('student.discussion_detail', discussion_id=discussion.id) }}" 
-                       class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">{{ discussion.title }}</h6>
-                            <small class="text-muted">
-                                {{ discussion.created_at.strftime('%Y-%m-%d') }}
-                            </small>
-                        </div>
-                        <p class="mb-1">
-                            Started by {{ discussion.created_by.username }}
-                        </p>
-                        <small class="text-muted">
-                            {{ discussion.posts.count() }} posts
-                        </small>
-                    </a>
-                    {% endfor %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Course Discussions</h4>
+                    <div>
+                        <button class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#newDiscussionModal">
+                            <i class="fas fa-plus me-1"></i> New Discussion
+                        </button>
+                        <a href="{{ url_for('student.course_detail', course_id=course_id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Course
+                        </a>
+                    </div>
                 </div>
-                {% else %}
-                <p class="text-muted">No discussions started yet.</p>
-                {% endif %}
+                <div class="card-body">
+                    {% if discussions %}
+                    <div class="list-group">
+                        {% for discussion in discussions %}
+                        <a href="{{ url_for('student.discussion_detail', discussion_id=discussion.id) }}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ discussion.title }}</h6>
+                                <small class="text-muted">
+                                    {{ discussion.created_at.strftime('%Y-%m-%d') }}
+                                </small>
+                            </div>
+                            <p class="mb-1">
+                                Started by {{ discussion.author.username }}
+                            </p>
+                            <small class="text-muted">
+                                {{ discussion.posts.count() }} posts
+                            </small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No discussions started yet.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Discussion Guidelines</h5>
-            </div>
-            <div class="card-body">
-                <ul class="list-unstyled mb-0">
-                    <li class="mb-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Keep discussions course-related
-                    </li>
-                    <li class="mb-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Be respectful to others
-                    </li>
-                    <li class="mb-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Use appropriate language
-                    </li>
-                    <li>
-                        <i class="fas fa-check text-success me-2"></i>
-                        Share knowledge constructively
-                    </li>
-                </ul>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Discussion Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Keep discussions course-related
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Be respectful to others
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Use appropriate language
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            Share knowledge constructively
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>

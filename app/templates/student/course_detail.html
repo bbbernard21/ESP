@@ -166,32 +166,42 @@
                     <div class="mb-3">
                         <h6>Assignments</h6>
                         <div class="progress">
-                            {% set completed_assignments = assignments|selectattr('get_submission', 'defined')|list|length %}
+                            {% set completed_assignments = namespace(count=0) %}
+                            {% for assignment in assignments %}
+                                {% if assignment.get_submission(current_user.id) %}
+                                    {% set completed_assignments.count = completed_assignments.count + 1 %}
+                                {% endif %}
+                            {% endfor %}
                             {% set total_assignments = assignments|length %}
-                            {% set assignment_progress = (completed_assignments / total_assignments * 100) if total_assignments > 0 else 0 %}
-                            <div class="progress-bar" role="progressbar" 
-                                style="width: {{ assignment_progress }}%;"
+                            {% set assignment_progress = (completed_assignments.count / total_assignments * 100) if total_assignments > 0 else 0 %}
+                            <div class="progress-bar" role="progressbar" style="width: {{ assignment_progress }}%" 
                                 aria-valuenow="{{ assignment_progress }}" 
                                 aria-valuemin="0" 
                                 aria-valuemax="100">
                                 {{ "%.0f"|format(assignment_progress) }}%
                             </div>
                         </div>
+                        <small class="text-muted">{{ completed_assignments.count }} of {{ total_assignments }} assignments completed</small>
                     </div>
                     <div>
                         <h6>Exams</h6>
                         <div class="progress">
-                            {% set completed_exams = exams|selectattr('get_grade', 'defined')|list|length %}
+                            {% set completed_exams = namespace(count=0) %}
+                            {% for exam in exams %}
+                                {% if exam.get_grade(current_user.id) %}
+                                    {% set completed_exams.count = completed_exams.count + 1 %}
+                                {% endif %}
+                            {% endfor %}
                             {% set total_exams = exams|length %}
-                            {% set exam_progress = (completed_exams / total_exams * 100) if total_exams > 0 else 0 %}
-                            <div class="progress-bar" role="progressbar" 
-                                style="width: {{ exam_progress }}%;"
+                            {% set exam_progress = (completed_exams.count / total_exams * 100) if total_exams > 0 else 0 %}
+                            <div class="progress-bar" role="progressbar" style="width: {{ exam_progress }}%" 
                                 aria-valuenow="{{ exam_progress }}" 
                                 aria-valuemin="0" 
                                 aria-valuemax="100">
                                 {{ "%.0f"|format(exam_progress) }}%
                             </div>
                         </div>
+                        <small class="text-muted">{{ completed_exams.count }} of {{ total_exams }} exams completed</small>
                     </div>
                 </div>
             </div>

@@ -1,109 +1,115 @@
-{% if current_user.role and current_user.role.name == 'STUDENT' %}
+{% if current_user.role == 'STUDENT' %}
     {% extends "student/base.html" %}
 {% else %}
     {% extends "base.html" %}
 {% endif %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <!-- Discussion Header -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">{{ discussion.title }}</h4>
-                    <small class="text-muted">Started {{ discussion.created_at.strftime('%Y-%m-%d') }}</small>
-                </div>
-                <p class="text-muted mb-0">
-                    <small>Started by {{ discussion.author.username }}</small>
-                </p>
-            </div>
-        </div>
-
-        <!-- Discussion Posts -->
-        <div class="card mb-4">
-            <div class="card-body">
-                {% if posts %}
-                <div class="discussion-posts">
-                    {% for post in posts %}
-                    <div class="discussion-post mb-4" id="post-{{ post.id }}">
-                        <div class="d-flex">
-                            <div class="flex-shrink-0">
-                                <div class="avatar">
-                                    <i class="fas fa-user-circle fa-2x text-secondary"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-1">{{ post.author.username }}</h6>
-                                    <small class="text-muted">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
-                                </div>
-                                <div class="post-content mb-2">
-                                    {{ post.content }}
-                                </div>
-                                <div class="post-actions">
-                                    <button class="btn btn-sm btn-link text-muted" 
-                                            onclick="showReplyForm('{{ post.id }}')">
-                                        Reply
-                                    </button>
-                                </div>
-                                <!-- Reply Form (hidden by default) -->
-                                <div class="reply-form mt-2" id="reply-form-{{ post.id }}" style="display: none;">
-                                    <form method="POST" action="{{ url_for('student.add_discussion_post', discussion_id=discussion.id) }}">
-                                        <input type="hidden" name="parent_id" value="{{ post.id }}">
-                                        <div class="mb-2">
-                                            <textarea class="form-control" name="content" rows="2" required></textarea>
-                                        </div>
-                                        <div class="d-flex justify-content-end">
-                                            <button type="button" class="btn btn-sm btn-link" 
-                                                    onclick="hideReplyForm('{{ post.id }}')">Cancel</button>
-                                            <button type="submit" class="btn btn-sm btn-primary ms-2">Reply</button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <!-- Replies -->
-                                {% if post.replies %}
-                                <div class="replies mt-3">
-                                    {% for reply in post.replies %}
-                                    <div class="reply mb-3">
-                                        <div class="d-flex">
-                                            <div class="flex-shrink-0">
-                                                <div class="avatar">
-                                                    <i class="fas fa-user-circle text-secondary"></i>
-                                                </div>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <h6 class="mb-1 small">{{ reply.author.username }}</h6>
-                                                    <small class="text-muted">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
-                                                </div>
-                                                <div class="reply-content small">
-                                                    {{ reply.content }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                            </div>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Discussion Header -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ discussion.title }}</h4>
+                        <div>
+                            <a href="{{ url_for('student.course_discussions', course_id=discussion.course_id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Discussions
+                            </a>
                         </div>
                     </div>
-                    {% endfor %}
+                    <p class="text-muted mb-0">
+                        <small>Started by {{ discussion.author.username }} on {{ discussion.created_at.strftime('%Y-%m-%d') }}</small>
+                    </p>
                 </div>
-                {% else %}
-                <p class="text-muted">No posts in this discussion yet.</p>
-                {% endif %}
+            </div>
 
-                <!-- New Post Form -->
-                <div class="new-post-form mt-4">
-                    <h5 class="mb-3">Add a Post</h5>
-                    <form method="POST" action="{{ url_for('student.add_discussion_post', discussion_id=discussion.id) }}">
-                        <div class="mb-3">
-                            <textarea class="form-control" name="content" rows="3" required></textarea>
+            <!-- Discussion Posts -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    {% if posts %}
+                    <div class="discussion-posts">
+                        {% for post in posts %}
+                        <div class="discussion-post mb-4" id="post-{{ post.id }}">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar">
+                                        <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-1">{{ post.author.username }}</h6>
+                                        <small class="text-muted">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    <div class="post-content mb-2">
+                                        {{ post.content }}
+                                    </div>
+                                    <div class="post-actions">
+                                        <button class="btn btn-sm btn-link text-muted" 
+                                                onclick="showReplyForm('{{ post.id }}')">
+                                            Reply
+                                        </button>
+                                    </div>
+                                    <!-- Reply Form (hidden by default) -->
+                                    <div class="reply-form mt-2" id="reply-form-{{ post.id }}" style="display: none;">
+                                        <form method="POST" action="{{ url_for('student.add_discussion_post', discussion_id=discussion.id) }}">
+                                            <input type="hidden" name="parent_id" value="{{ post.id }}">
+                                            <div class="mb-2">
+                                                <textarea class="form-control" name="content" rows="2" required></textarea>
+                                            </div>
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-sm btn-link" 
+                                                        onclick="hideReplyForm('{{ post.id }}')">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-primary ms-2">Reply</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <!-- Replies -->
+                                    {% if post.replies %}
+                                    <div class="replies mt-3">
+                                        {% for reply in post.replies %}
+                                        <div class="reply mb-3">
+                                            <div class="d-flex">
+                                                <div class="flex-shrink-0">
+                                                    <div class="avatar">
+                                                        <i class="fas fa-user-circle text-secondary"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1 ms-3">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-1 small">{{ reply.author.username }}</h6>
+                                                        <small class="text-muted">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                                    </div>
+                                                    <div class="reply-content small">
+                                                        {{ reply.content }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Post</button>
-                    </form>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No posts in this discussion yet.</p>
+                    {% endif %}
+
+                    <!-- New Post Form -->
+                    <div class="new-post-form mt-4">
+                        <h5 class="mb-3">Add a Post</h5>
+                        <form method="POST" action="{{ url_for('student.add_discussion_post', discussion_id=discussion.id) }}">
+                            <div class="mb-3">
+                                <textarea class="form-control" name="content" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Post</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
