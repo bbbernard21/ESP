@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - Enhanced Student Portal</title>
+    {% if current_user.is_authenticated %}
+      <meta name="current-user-id" content="{{ current_user.id }}">
+      <script>window.currentUserId = "{{ current_user.id }}";</script>
+    {% endif %}
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -35,6 +39,13 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('academic.goals') }}">Goals</a>
                         </li>
+                        {% if current_user.is_professor %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('professor.early_warning') }}">
+                                <i class="fas fa-exclamation-triangle"></i> Early Warning
+                            </a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('communication.messages') }}">
                                 Messages
@@ -42,6 +53,38 @@
                                 <span class="badge bg-danger">{{ current_user.get_unread_messages_count() }}</span>
                                 {% endif %}
                             </a>
+                            <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle position-relative" href="#" id="communicationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-comments"></i> Communication
+        <span
+  id="notification-badge-main"
+  class="badge bg-danger position-absolute top-0 start-100 translate-middle
+         {{ 'd-inline-block' if current_user.get_unread_notifications_count() > 0 else 'd-none' }}"
+>
+  {{ current_user.get_unread_notifications_count() if current_user.get_unread_notifications_count() > 0 else '' }}
+</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="communicationDropdown">
+        <li><a class="dropdown-item" href="{{ url_for('communication.messages') }}">Messages</a></li>
+        <li><a class="dropdown-item position-relative" href="{{ url_for('communication.notifications') }}">
+            Notifications
+        <span
+            id="notification-badge"
+            class="badge bg-danger position-absolute top-0 start-100 translate-middle
+                   {{ 'd-inline-block' if current_user.get_unread_notifications_count() > 0 else 'd-none' }}"
+        >
+            {{ current_user.get_unread_notifications_count() if current_user.get_unread_notifications_count() > 0 else '' }}
+        </span>          
+        </a></li>
+        {% if current_user.is_authenticated %}
+  {% if current_user.is_professor %}
+    <li><a class="dropdown-item" href="{{ url_for('professor.announcements') }}">Announcements</a></li>
+  {% elif current_user.is_student %}
+    <li><a class="dropdown-item" href="{{ url_for('student.announcements') }}">Announcements</a></li>
+  {% endif %}
+{% endif %}
+    </ul>
+</li>
                         </li>
                     </ul>
                     {% endif %}
@@ -101,6 +144,12 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% if current_user.is_authenticated and current_user.is_student %}
+        <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+    {% endif %}
     {% block scripts %}{% endblock %}
+    <!-- Socket.IO client -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
 </body>
 </html>

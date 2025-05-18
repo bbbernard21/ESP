@@ -38,6 +38,46 @@
                     </div>
                 </div>
                 <div class="card-footer">
+                    <!-- Edit Goal Modal -->
+                    <div class="modal fade" id="editGoalModal{{ goal.id }}" tabindex="-1" aria-labelledby="editGoalModalLabel{{ goal.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="editGoalModalLabel{{ goal.id }}">Edit Academic Goal</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="{{ url_for('student.update_goal', goal_id=goal.id) }}" method="POST">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="title{{ goal.id }}" class="form-label">Goal Title</label>
+                                            <input type="text" class="form-control" id="title{{ goal.id }}" name="title" value="{{ goal.title }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="description{{ goal.id }}" class="form-label">Description</label>
+                                            <textarea class="form-control" id="description{{ goal.id }}" name="description" rows="3" required>{{ goal.description }}</textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="target_date{{ goal.id }}" class="form-label">Target Date</label>
+                                            <input type="date" class="form-control" id="target_date{{ goal.id }}" name="target_date" value="{{ goal.target_date.strftime('%Y-%m-%d') }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="status{{ goal.id }}" class="form-label">Status</label>
+                                            <select class="form-select" id="status{{ goal.id }}" name="status">
+                                                <option value="in_progress" {% if goal.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                                <option value="completed" {% if goal.status == 'completed' %}selected{% endif %}>Completed</option>
+                                                <option value="active" {% if goal.status == 'active' %}selected{% endif %}>Active</option>
+                                                <option value="cancelled" {% if goal.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     <button class="btn btn-sm btn-outline-primary me-2" 
                             data-bs-toggle="modal" 
                             data-bs-target="#editGoalModal{{ goal.id }}">
@@ -48,6 +88,27 @@
                             data-bs-target="#deleteGoalModal{{ goal.id }}">
                         <i class="fas fa-trash me-1"></i>Delete
                     </button>
+
+                    <!-- Delete Goal Modal -->
+                    <div class="modal fade" id="deleteGoalModal{{ goal.id }}" tabindex="-1" aria-labelledby="deleteGoalModalLabel{{ goal.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteGoalModalLabel{{ goal.id }}">Delete Academic Goal</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Are you sure you want to delete the goal "<strong>{{ goal.title }}</strong>"?
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{{ url_for('student.delete_goal', goal_id=goal.id) }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

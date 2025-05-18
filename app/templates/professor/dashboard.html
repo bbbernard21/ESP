@@ -154,39 +154,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Recent Messages -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title mb-0">Recent Messages</h3>
-                </div>
-                <div class="card-body">
-                    {% if recent_messages %}
-                        <div class="list-group">
-                            {% for message in recent_messages %}
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">{{ message.sender.first_name }} {{ message.sender.last_name }}</h6>
-                                        <small>{{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
-                                    </div>
-                                    <p class="mb-1">{{ message.subject }}</p>
-                                    <small>{{ message.content[:100] }}{% if message.content|length > 100 %}...{% endif %}</small>
-                                    <div class="mt-2">
-                                        <a href="{{ url_for('professor.view_message', message_id=message.id) }}" 
-                                           class="btn btn-sm btn-primary">View</a>
-                                        <a href="{{ url_for('professor.reply_message', message_id=message.id) }}" 
-                                           class="btn btn-sm btn-info">Reply</a>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p>No recent messages.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

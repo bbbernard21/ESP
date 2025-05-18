@@ -12,7 +12,8 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4>Course Quizzes</h4>
-                <a href="{{ url_for('professor.create_quiz', course_id=course.id) }}" class="btn btn-primary">
+                {# <a href="{{ url_for('professor.create_quiz', course_id=course.id) }}" class="btn btn-primary"> #}
+<!-- TODO: Add create_quiz route or fix this link -->
                     <i class="fas fa-plus"></i> Create Quiz
                 </a>
             </div>
@@ -40,7 +41,7 @@
                             <td>{{ quiz.duration }}</td>
                             <td>{{ quiz.total_marks }}</td>
                             <td>
-                                {{ quiz.submissions|length }} / {{ course.academic_records|length }}
+                                {{ quiz.grades.all()|length }} / {{ course.academic_records.all()|length }}
                             </td>
                             <td>
                                 <a href="{{ url_for('professor.edit_quiz', quiz_id=quiz.id) }}" 

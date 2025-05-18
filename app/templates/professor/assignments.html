@@ -38,7 +38,7 @@
                             <td>{{ assignment.total_points }}</td>
                             <td>{{ assignment.weight }}%</td>
                             <td>
-                                {{ assignment.submissions|length }} / {{ course.academic_records|length }}
+                                {{ assignment.submissions|length }} / {{ course.academic_records.count() }}
                             </td>
                             <td>
                                 <a href="{{ url_for('professor.edit_assignment', assignment_id=assignment.id) }}" 

@@ -76,76 +76,81 @@
 </div>
 
 <script>
-function showCreateModal(courseId) {
-    document.getElementById('modalTitle').textContent = 'Create Announcement';
-    document.getElementById('courseId').value = courseId;
-    document.getElementById('announcementId').value = '';
-    document.getElementById('title').value = '';
-    document.getElementById('content').value = '';
-    $('#announcementModal').modal('show');
-}
+document.addEventListener('DOMContentLoaded', function() {
+    window.showCreateModal = function(courseId) {
+        document.getElementById('modalTitle').textContent = 'Create Announcement';
+        document.getElementById('courseId').value = courseId;
+        document.getElementById('announcementId').value = '';
+        document.getElementById('title').value = '';
+        document.getElementById('content').value = '';
+        var modal = new bootstrap.Modal(document.getElementById('announcementModal'));
+modal.show();
+    }
 
-function showEditModal(announcementId) {
-    fetch(`/professor/announcement/${announcementId}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('modalTitle').textContent = 'Edit Announcement';
-            document.getElementById('courseId').value = data.course_id;
-            document.getElementById('announcementId').value = data.id;
-            document.getElementById('title').value = data.title;
-            document.getElementById('content').value = data.content;
-            $('#announcementModal').modal('show');
-        });
-}
+    window.showEditModal = function(announcementId) {
+        fetch(`/professor/announcement/${announcementId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('modalTitle').textContent = 'Edit Announcement';
+                document.getElementById('courseId').value = data.course_id;
+                document.getElementById('announcementId').value = data.id;
+                document.getElementById('title').value = data.title;
+                document.getElementById('content').value = data.content;
+                var modal = new bootstrap.Modal(document.getElementById('announcementModal'));
+modal.show();
+            });
+    }
 
-function saveAnnouncement() {
-    const announcementId = document.getElementById('announcementId').value;
-    const courseId = document.getElementById('courseId').value;
-    const title = document.getElementById('title').value;
-    const content = document.getElementById('content').value;
-    
-    const url = announcementId ? 
-        `/professor/announcement/${announcementId}/update` : 
-        `/professor/course/${courseId}/announcement/create`;
-    
-    fetch(url, {
-        method: announcementId ? 'PUT' : 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            title: title,
-            content: content
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            $('#announcementModal').modal('hide');
-            location.reload();
-        } else {
-            alert('Error saving announcement');
-        }
-    });
-}
-
-function deleteAnnouncement(announcementId) {
-    if (confirm('Are you sure you want to delete this announcement?')) {
-        fetch(`/professor/announcement/${announcementId}/delete`, {
-            method: 'DELETE',
+    window.saveAnnouncement = function() {
+        const announcementId = document.getElementById('announcementId').value;
+        const courseId = document.getElementById('courseId').value;
+        const title = document.getElementById('title').value;
+        const content = document.getElementById('content').value;
+        
+        const url = announcementId ? 
+            `/professor/announcement/${announcementId}/update` : 
+            `/professor/course/${courseId}/announcement/create`;
+        
+        fetch(url, {
+            method: announcementId ? 'PUT' : 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                title: title,
+                content: content
+            })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                var modal = bootstrap.Modal.getInstance(document.getElementById('announcementModal'));
+                if (modal) modal.hide();
                 location.reload();
             } else {
-                alert('Error deleting announcement');
+                alert('Error saving announcement');
             }
         });
     }
-}
+
+    window.deleteAnnouncement = function(announcementId) {
+        if (confirm('Are you sure you want to delete this announcement?')) {
+            fetch(`/professor/announcement/${announcementId}/delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error deleting announcement');
+                }
+            });
+        }
+    }
+});
 </script>
-{% endblock %} 
+{% endblock %}

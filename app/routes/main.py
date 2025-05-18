@@ -33,11 +33,22 @@ def dashboard():
 @main.route('/profile')
 @login_required
 def profile():
-    return render_template('main/profile.html', title='My Profile')
+    if current_user.is_admin:
+        return redirect(url_for('admin.admin_profile'))
+    # For students: fetch 5 most recently updated academic records
+    recent_records = []
+    if hasattr(current_user, 'academic_records'):
+        try:
+            recent_records = current_user.academic_records.order_by(AcademicRecord.updated_at.desc()).limit(5)
+        except Exception:
+            recent_records = []
+    return render_template('main/profile.html', title='My Profile', recent_records=recent_records)
 
 @main.route('/settings')
 @login_required
 def settings():
+    if current_user.is_admin:
+        return redirect(url_for('admin.admin_profile'))
     return render_template('main/settings.html', title='Settings')
 
 @main.route('/update_profile', methods=['POST'])

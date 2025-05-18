@@ -3,6 +3,36 @@
 {% block content %}
 <div class="container mt-4">
     <h1>Analytics & Reports</h1>
+    <table class="table table-bordered mt-4">
+        <thead class="thead-light">
+            <tr>
+                <th>Course Name</th>
+                <th>Average Grade</th>
+                <th>Highest Grade</th>
+                <th>Lowest Grade</th>
+                <th>Passing Rate (%)</th>
+                <th>Total Students</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% if course_stats|length == 0 %}
+            <tr><td colspan="6" class="text-center">No analytics data available for your courses.</td></tr>
+        {% else %}
+        {% for stat in course_stats %}
+            <tr>
+                <td>{{ stat['course'].name }}</td>
+                <td>{{ '%.1f'|format(stat['average_grade']) }}</td>
+                <td>{{ stat['highest_grade'] }}</td>
+                <td>{{ stat['lowest_grade'] }}</td>
+                <td>{{ '%.1f'|format(stat['passing_rate']) }}</td>
+                <td>{{ stat['total_students'] }}</td>
+            </tr>
+        {% endfor %}
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+
     
     {% for course in courses %}
     <div class="card mb-4">

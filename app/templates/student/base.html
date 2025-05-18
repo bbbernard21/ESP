@@ -32,7 +32,7 @@
                         <li><a class="dropdown-item" href="{{ url_for('student.quizzes') }}">Quizzes</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('student.exams') }}">Exams</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.submissions') }}">My Submissions</a></li>
+                        <li></li>
                         <li><a class="dropdown-item" href="{{ url_for('student.grades') }}">My Grades</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('student.schedule') }}">My Schedule</a></li>
                     </ul>
@@ -45,7 +45,12 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ url_for('student.progress') }}">Academic Progress</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('student.goals') }}">Academic Goals</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.goals') }}">
+                            <i class="fas fa-flag"></i> Academic Goals
+                        </a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('student.semester_goals') }}">
+                            <i class="fas fa-bullseye"></i> Semester Goals
+                        </a></li>
                         <li><a class="dropdown-item" href="{{ url_for('student.analytics') }}">Performance Analytics</a></li>
                     </ul>
                 </li>

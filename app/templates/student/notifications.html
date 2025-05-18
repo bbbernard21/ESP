@@ -52,11 +52,12 @@
 {% block scripts %}
 <script>
 function markAsRead(notificationId) {
-    fetch(`/student/notifications/${notificationId}/mark-read`, {
+    fetch('/api/notifications/mark_read', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ notification_id: notificationId })
     })
     .then(response => response.json())
     .then(data => {
@@ -68,7 +69,7 @@ function markAsRead(notificationId) {
 }
 
 function markAllAsRead() {
-    fetch('/student/notifications/mark-all-read', {
+    fetch('/api/notifications/mark_all_read', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

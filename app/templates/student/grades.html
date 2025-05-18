@@ -115,8 +115,7 @@
                                 <td>{{ item.weight }}%</td>
                                 <td>
                                     {% if item.type == 'assignment' and item.submission_id %}
-                                    <a href="{{ url_for('student.view_submission', submission_id=item.submission_id) }}" 
-                                       class="btn btn-sm btn-info">View Submission</a>
+                                    
                                     {% elif item.type in ['midterm', 'final'] and item.exam_id %}
                                     <a href="{{ url_for('student.view_exam', exam_id=item.exam_id) }}" 
                                        class="btn btn-sm btn-info">View Exam</a>

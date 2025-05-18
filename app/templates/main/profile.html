@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "student/base.html" %}
 
 {% block content %}
 <div class="row">
@@ -42,25 +42,7 @@
             </div>
         </div>
 
-        <!-- Activity Summary -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Recent Activity</h5>
-            </div>
-            <div class="list-group list-group-flush">
-                {% for record in current_user.academic_records.order_by('updated_at').limit(5) %}
-                <div class="list-group-item">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">{{ record.course.name }}</h6>
-                        <small class="text-muted">{{ record.updated_at.strftime('%Y-%m-%d') }}</small>
-                    </div>
-                    <p class="mb-1">Grade: {{ record.grade if record.grade else 'Not graded' }}</p>
-                </div>
-                {% else %}
-                <div class="list-group-item">No recent activity</div>
-                {% endfor %}
-            </div>
-        </div>
+
     </div>
 </div>
 

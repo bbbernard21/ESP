@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from flask_login import login_required, current_user
 from app import db
 from app.models.academic import (
@@ -13,6 +13,19 @@ from werkzeug.utils import secure_filename
 import os
 
 professor = Blueprint('professor', __name__)
+
+# Context processor to inject professor's courses
+@professor.app_context_processor
+def inject_professor_courses():
+    from flask_login import current_user
+    from app.models.academic import Course
+    courses = []
+    try:
+        if hasattr(current_user, 'id') and getattr(current_user, 'is_authenticated', False):
+            courses = Course.query.filter_by(professor_id=current_user.id).all()
+    except Exception:
+        pass
+    return dict(professor_courses=courses)
 
 # Dashboard
 @professor.route('/professor/dashboard')
@@ -97,10 +110,22 @@ def dashboard():
         Course.professor_id == current_user.id
     ).order_by(AssignmentSubmission.submitted_at.desc()).limit(5).all()
     
-    # Get recent messages
-    recent_messages = Message.query.filter_by(
-        recipient_id=current_user.id
-    ).order_by(Message.timestamp.desc()).limit(5).all()
+    # Get recent messages from conversations (same as inbox)
+    from app.models.communication import Conversation
+    recent_messages = []
+    direct_conversations = (Conversation.query
+        .filter(
+            (Conversation.user1_id == current_user.id) |
+            (Conversation.user2_id == current_user.id)
+        )
+        .order_by(Conversation.updated_at.desc())
+        .limit(5)
+        .all())
+    for convo in direct_conversations:
+        # Get the latest message in the conversation
+        last_msg = convo.messages.order_by(Message.timestamp.desc()).first()
+        if last_msg:
+            recent_messages.append(last_msg)
     
     # Get announcements
     announcements = Announcement.query.join(Course).filter(
@@ -117,6 +142,39 @@ def dashboard():
                          recent_messages=recent_messages)
 
 # Course Management
+
+@professor.route('/professor/course/<int:course_id>/quiz/create', methods=['GET', 'POST'])
+@login_required
+@professor_required
+def create_quiz(course_id):
+    course = Course.query.get_or_404(course_id)
+    if course.professor_id != current_user.id:
+        flash('You do not have permission to create quizzes for this course.', 'error')
+        return redirect(url_for('professor.dashboard'))
+    
+    if request.method == 'POST':
+        try:
+            quiz = Quiz(
+                course_id=course_id,
+                title=request.form['title'],
+                description=request.form.get('description', ''),
+                total_marks=float(request.form.get('total_marks', 100)),
+                duration=int(request.form.get('duration', 30)),
+                start_time=datetime.strptime(request.form['start_time'], '%Y-%m-%d %H:%M'),
+                end_time=datetime.strptime(request.form['end_time'], '%Y-%m-%d %H:%M'),
+                weight=float(request.form.get('weight', 1.0))
+            )
+            db.session.add(quiz)
+            db.session.commit()
+            flash('Quiz created successfully!', 'success')
+            return redirect(url_for('professor.course_details', course_id=course_id))
+        except Exception as e:
+            flash(f'Error creating quiz: {str(e)}', 'error')
+    
+    return render_template('professor/create_quiz.html',
+                         title='Create Quiz',
+                         course=course)
+
 @professor.route('/professor/course_materials')
 @login_required
 @professor_required
@@ -194,14 +252,7 @@ def student_progress():
                          title='Student Progress',
                          courses=courses)
 
-@professor.route('/professor/engagement_metrics')
-@login_required
-@professor_required
-def engagement_metrics():
-    courses = Course.query.filter_by(professor_id=current_user.id).all()
-    return render_template('professor/engagement_metrics.html',
-                         title='Engagement Metrics',
-                         courses=courses)
+
 
 @professor.route('/professor/analytics')
 @login_required
@@ -226,7 +277,86 @@ def analytics():
                          title='Analytics & Reports',
                          course_stats=course_stats)
 
+@professor.route('/professor/early_warning', methods=['GET', 'POST'], endpoint='early_warning')
+@login_required
+@professor_required
+def early_warning():
+    from flask import session
+    from app.utils.early_warning import check_all_students_and_alert
+    results = []
+    if request.method == 'POST':
+        results = check_all_students_and_alert()
+        session['early_warning_results'] = results
+        flash(f'Early warning check complete. {len(results)} students flagged.', 'info')
+    else:
+        results = session.get('early_warning_results', [])
+    return render_template('professor/early_warning.html', results=results)
+
 # Communication
+
+@professor.route('/professor/announcement/<int:announcement_id>')
+@login_required
+@professor_required
+def get_announcement(announcement_id):
+    announcement = Announcement.query.get_or_404(announcement_id)
+    if announcement.course.professor_id != current_user.id:
+        return jsonify({'error': 'Permission denied'}), 403
+    return jsonify({
+        'id': announcement.id,
+        'course_id': announcement.course_id,
+        'title': announcement.title,
+        'content': announcement.content
+    })
+
+@professor.route('/professor/announcement/<int:announcement_id>/update', methods=['PUT'])
+@login_required
+@professor_required
+def update_announcement(announcement_id):
+    announcement = Announcement.query.get_or_404(announcement_id)
+    if announcement.course.professor_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
+    data = request.get_json()
+    announcement.title = data.get('title', announcement.title)
+    announcement.content = data.get('content', announcement.content)
+    announcement.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'success': True})
+
+@professor.route('/professor/announcement/<int:announcement_id>/delete', methods=['DELETE'])
+@login_required
+@professor_required
+def delete_announcement(announcement_id):
+    announcement = Announcement.query.get_or_404(announcement_id)
+    if announcement.course.professor_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
+    db.session.delete(announcement)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@professor.route('/professor/course/<int:course_id>/announcement/create', methods=['POST'])
+@login_required
+@professor_required
+def create_announcement(course_id):
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+    if not title or not content:
+        return jsonify({'success': False, 'error': 'Missing title or content'}), 400
+    course = Course.query.get_or_404(course_id)
+    if course.professor_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
+    announcement = Announcement(
+        course_id=course_id,
+        title=title,
+        content=content,
+        created_at=datetime.utcnow(),
+        created_by=current_user.id
+    )
+    db.session.add(announcement)
+    db.session.commit()
+    return jsonify({'success': True, 'id': announcement.id})
+
 @professor.route('/professor/announcements')
 @login_required
 @professor_required
@@ -249,8 +379,31 @@ def send_notifications():
 @login_required
 @professor_required
 def messages():
-    return render_template('professor/messages.html',
-                         title='Messages')
+    from app.models.communication import Conversation, GroupChat, ChatParticipant, ChatMessageRead
+    # Get direct conversations for professor
+    direct_conversations = (Conversation.query
+        .filter(
+            (Conversation.user1_id == current_user.id) |
+            (Conversation.user2_id == current_user.id)
+        )
+        .order_by(Conversation.updated_at.desc())
+        .all())
+    # Get group chats for professor
+    group_chats = (GroupChat.query
+        .join(ChatParticipant)
+        .filter(ChatParticipant.user_id == current_user.id, GroupChat.is_group == True)
+        .order_by(GroupChat.created_at.desc())
+        .all())
+    # All users except current user and admins for new message modal
+    available_users = User.query.filter(User.id != current_user.id, User.role != UserRole.ADMIN.value).all()
+    return render_template(
+        'communication/messages.html',
+        base_template='professor/base.html',
+        direct_conversations=direct_conversations,
+        group_chats=group_chats,
+        available_users=available_users,
+        ChatMessageRead=ChatMessageRead,
+        title='Messages')
 
 # Existing detailed routes
 @professor.route('/professor/course/<int:course_id>')
@@ -268,6 +421,7 @@ def course_details(course_id):
     ).all()
     
     assignments = Assignment.query.filter_by(course_id=course_id).all()
+    quizzes = Quiz.query.filter_by(course_id=course_id).all()
     exams = Exam.query.filter_by(course_id=course_id).all()
     materials = CourseMaterial.query.filter_by(course_id=course_id).all()
     
@@ -276,8 +430,10 @@ def course_details(course_id):
                          course=course,
                          enrolled_students=enrolled_students,
                          assignments=assignments,
+                         quizzes=quizzes,
                          exams=exams,
                          materials=materials)
+
 
 @professor.route('/professor/course/<int:course_id>/assignment/create', methods=['GET', 'POST'])
 @login_required
@@ -432,3 +588,41 @@ def grade_exam(exam_id, student_id):
                          title='Grade Exam',
                          exam=exam,
                          student=User.query.get_or_404(student_id)) 
+
+@professor.route('/professor/download_material/<int:material_id>')
+@login_required
+@professor_required
+def download_material(material_id):
+    material = CourseMaterial.query.get_or_404(material_id)
+    course = Course.query.get_or_404(material.course_id)
+    if course.professor_id != current_user.id:
+        flash('You do not have permission to download this material.', 'error')
+        return redirect(url_for('professor.dashboard'))
+    directory = os.path.dirname(material.file_path)
+    filename = os.path.basename(material.file_path)
+    return send_from_directory(directory, filename, as_attachment=True)
+
+@professor.route('/professor/student_progress/<int:course_id>/<int:student_id>')
+@login_required
+@professor_required
+def student_progress_detail(course_id, student_id):
+    course = Course.query.get_or_404(course_id)
+    if course.professor_id != current_user.id:
+        flash('You do not have permission to view this student\'s progress.', 'error')
+        return redirect(url_for('professor.dashboard'))
+    student = User.query.get_or_404(student_id)
+    record = AcademicRecord.query.filter_by(student_id=student_id, course_id=course_id).first()
+    assignments = Assignment.query.filter_by(course_id=course_id).all()
+    submissions = AssignmentSubmission.query.filter_by(student_id=student_id).all()
+    exams = Exam.query.filter_by(course_id=course_id).all()
+    exam_grades = ExamGrade.query.filter_by(student_id=student_id).all()
+    return render_template('professor/student_progress_detail.html',
+                           course=course, student=student, record=record,
+                           assignments=assignments, submissions=submissions,
+                           exams=exams, exam_grades=exam_grades)
+
+@professor.route('/professor/help')
+@login_required
+@professor_required
+def help():
+    return render_template('professor_help.html')

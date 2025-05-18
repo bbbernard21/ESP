@@ -83,8 +83,67 @@
                 </div>
             </div>
 
+            <!-- Quizzes Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Quizzes</h5>
+                </div>
+                <div class="card-body">
+                    {% if quizzes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>End Time</th>
+                                    <th>Total Points</th>
+                                    <th>Weight</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for quiz in quizzes %}
+                                <tr>
+                                    <td>{{ quiz.title }}</td>
+                                    <td>{{ quiz.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ quiz.total_points }}</td>
+                                    <td>{{ quiz.weight }}</td>
+                                    <td>
+                                        {% set submission = quiz.get_submission(current_user.id) %}
+                                        {% if submission %}
+                                            {% if submission.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% else %}
+                                                <span class="badge bg-info">In Progress</span>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if quiz.end_time < now %}
+                                                <span class="badge bg-danger">Missed</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Not Started</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('student.take_quiz', quiz_id=quiz.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit me-1"></i> Take Quiz
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No quizzes available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Exams Section -->
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">Exams</h5>
                 </div>
@@ -96,6 +155,8 @@
                                 <tr>
                                     <th>Title</th>
                                     <th>Date</th>
+                                    <th>Total Points</th>
+                                    <th>Weight</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -104,17 +165,14 @@
                                 {% for exam in exams %}
                                 <tr>
                                     <td>{{ exam.title }}</td>
-                                    <td>{{ exam.exam_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ exam.exam_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>{{ exam.total_points }}</td>
+                                    <td>{{ exam.weight }}</td>
                                     <td>
-                                        {% set grade = exam.get_grade(current_user.id) %}
-                                        {% if grade %}
-                                            <span class="badge bg-success">Graded</span>
+                                        {% if exam.exam_date < now %}
+                                            <span class="badge bg-secondary">Completed</span>
                                         {% else %}
-                                            {% if exam.exam_date < now %}
-                                                <span class="badge bg-secondary">Completed</span>
-                                            {% else %}
-                                                <span class="badge bg-warning">Upcoming</span>
-                                            {% endif %}
+                                            <span class="badge bg-info">Upcoming</span>
                                         {% endif %}
                                     </td>
                                     <td>

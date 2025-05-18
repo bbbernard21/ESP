@@ -35,7 +35,7 @@
                 'Quiz': '#BBDEFB'
             } %}
             
-            {% for item in schedule_items|sort(attribute='date') %}
+            {% for item in schedule_items %}
             <div class="list-group-item" 
                  style="background-color: {{ course_colors.get(item.course.name, '#ccc') }}; 
                         border-left-color: {{ course_colors.get(item.course.name, '#ccc') }};">
@@ -52,7 +52,11 @@
                         </small><br>
                         <small class="text-muted">
                             <i class="fas fa-clock me-1"></i> 
-                            {{ item.date.strftime('%B %d, %Y at %I:%M %p') }}
+                            {% if item.date %}
+                                {{ item.date.strftime('%B %d, %Y at %I:%M %p') }}
+                            {% else %}
+                                <span class="text-warning">TBA</span>
+                            {% endif %}
                         </small>
                     </div>
                 </div>
@@ -94,6 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         events: [
             {% for item in schedule_items %}
+            {% if item.date %}
             {
                 title: '{{ item.title }}',
                 start: '{{ item.date.strftime("%Y-%m-%d %H:%M:%S") }}',
@@ -101,6 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 course: '{{ item.course.name }}',
                 description: '{{ item.description|default("No description available")|e }}'
             }{% if not loop.last %},{% endif %}
+            {% endif %}
             {% endfor %}
         ],
         eventDidMount: function(info) {

@@ -15,11 +15,15 @@ function markNotificationAsRead(notificationId) {
                 const notification = document.querySelector(`#notification-${notificationId}`);
                 notification.classList.remove('unread');
                 updateNotificationCount();
+                // Emit notification_read event via Socket.IO
+                if (window.socket) {
+                    window.socket.emit('notification_read', { notification_id: notificationId });
+                }
             }
         });
 }
 
-// Update notification count in navbar
+// Update notification count in navbar and emit real-time event
 function updateNotificationCount() {
     const badge = document.querySelector('#notification-badge');
     if (badge) {
@@ -27,6 +31,35 @@ function updateNotificationCount() {
         if (currentCount > 1) {
             badge.textContent = currentCount - 1;
         } else {
+            badge.textContent = '';
+            badge.style.display = 'none';
+        }
+    }
+    // Emit notification_read event via Socket.IO
+    if (window.socket) {
+        window.socket.emit('notification_read', {});
+    }
+}
+
+// Increment notification badge
+function incrementNotificationBadge() {
+    const badge = document.querySelector('#notification-badge');
+    if (badge) {
+        let count = parseInt(badge.textContent) || 0;
+        badge.textContent = count + 1;
+        badge.style.display = '';
+    }
+}
+
+// Decrement notification badge
+function decrementNotificationBadge() {
+    const badge = document.querySelector('#notification-badge');
+    if (badge) {
+        let count = parseInt(badge.textContent) || 0;
+        if (count > 1) {
+            badge.textContent = count - 1;
+        } else {
+            badge.textContent = '';
             badge.style.display = 'none';
         }
     }

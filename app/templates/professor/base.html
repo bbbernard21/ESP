@@ -14,8 +14,8 @@
                         <i class="fas fa-home"></i> Dashboard
                     </a>
                 </li>
-                
-                <!-- Course Management -->
+
+                <!-- Course Management: Dynamic dropdown for all professor's courses -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-chalkboard-teacher"></i> Course Management
@@ -23,23 +23,23 @@
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ url_for('professor.course_materials') }}">Course Materials</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('professor.student_enrollments') }}">Student Enrollments</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('professor.course_schedule') }}">Course Schedule</a></li>
+                        {% for course in professor_courses %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('professor.course_details', course_id=course.id) }}">
+                                    {{ course.name }} ({{ course.code }})
+                                </a>
+                            </li>
+                        {% else %}
+                            <li><span class="dropdown-item text-muted">No courses found</span></li>
+                        {% endfor %}
                     </ul>
                 </li>
 
-                <!-- Assessments -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-tasks"></i> Assessments
+                <!-- Early Warning -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('professor.early_warning') }}">
+                        <i class="fas fa-exclamation-triangle"></i> Early Warning
                     </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('professor.assignments') }}">Assignments</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('professor.quizzes') }}">Quizzes</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('professor.exams') }}">Exams</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('professor.grade_submissions') }}">Grade Submissions</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('professor.reevaluation_requests') }}">Re-evaluation Requests</a></li>
-                    </ul>
                 </li>
 
                 <!-- Student Progress -->
@@ -49,7 +49,7 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ url_for('professor.student_progress') }}">Progress Tracking</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('professor.engagement_metrics') }}">Engagement Metrics</a></li>
+                        <li></li>
                         <li><a class="dropdown-item" href="{{ url_for('professor.analytics') }}">Analytics & Reports</a></li>
                     </ul>
                 </li>
@@ -66,17 +66,7 @@
                     </ul>
                 </li>
 
-                <!-- Resources -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-book"></i> Resources
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('professor.teaching_resources') }}">Teaching Resources</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('professor.academic_calendar') }}">Academic Calendar</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('professor.help') }}">Help & Support</a></li>
-                    </ul>
-                </li>
+
             </ul>
 
             <!-- User Menu -->
@@ -86,8 +76,6 @@
                         <i class="fas fa-user"></i> {{ current_user.full_name }}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">Profile</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('main.settings') }}">Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
                     </ul>
