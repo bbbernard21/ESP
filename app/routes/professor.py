@@ -366,14 +366,7 @@ def announcements():
                          title='Announcements',
                          courses=courses)
 
-@professor.route('/professor/send_notifications')
-@login_required
-@professor_required
-def send_notifications():
-    courses = Course.query.filter_by(professor_id=current_user.id).all()
-    return render_template('professor/send_notifications.html',
-                         title='Send Notifications',
-                         courses=courses)
+
 
 @professor.route('/professor/messages')
 @login_required
