@@ -1,0 +1,310 @@
+{% extends "student/base.html" %}
+
+{% block styles %}
+<style>
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    white-space: nowrap;
+    transition: width .6s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Semester Overview -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Semester Overview</h5>
+                </div>
+                <div class="card-body">
+                    {% if semester_goal %}
+                        <div class="mb-3">
+                            <h6>Target GPA</h6>
+                            <h3>{{ "%.2f"|format(semester_goal.target_gpa) }}/4.0</h3>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (semester_goal.current_gpa or 0) / 4.0 * 100 }}%"
+                                     aria-valuenow="{{ (semester_goal.current_gpa or 0) }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="4">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Current GPA</h6>
+                            <h3>{{ "%.2f"|format(semester_goal.current_gpa or 0) }}/4.0</h3>
+                        </div>
+                        <div class="text-muted">
+                            <small>{{ semester_goal.semester }} {{ semester_goal.academic_year }}</small>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No semester goals set yet.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#setGoalsModal">
+                            Set Semester Goals
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Module Goals -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Module Goals</h5>
+                    {% if semester_goal %}
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#setGoalsModal">
+                            Update Goals
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if module_goals %}
+                        {% for goal in module_goals %}
+                            <div class="module-goal mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6>{{ goal.course.name }}</h6>
+                                    <span class="badge {% if goal.current_grade and goal.current_grade >= goal.target_grade %}bg-success{% else %}bg-warning{% endif %}">
+                                        Target: {{ goal.target_grade }}%
+                                    </span>
+                                </div>
+                                
+                                {% if goal.progress %}
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ goal.progress.completed_weight }}%"
+                                             aria-valuenow="{{ goal.progress.completed_weight }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                            {{ "%.1f"|format(goal.progress.completed_weight) }}% Complete
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="small">
+                                        <p class="mb-1">Current Grade: {{ "%.1f"|format(goal.progress.current_score) }}%</p>
+                                        {% if goal.progress.projected_grade %}
+                                            <p class="mb-1">Projected Grade: 
+                                                <strong>{{ "%.1f"|format(goal.progress.projected_grade) }}%</strong>
+                                                {% if goal.progress.projected_grade < goal.target_grade %}
+                                                    <span class="text-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                        Below target
+                                                    </span>
+                                                {% endif %}
+                                            </p>
+                                        {% endif %}
+                                        <p class="mb-1">Required Score in Remaining Assessments: 
+                                            <strong>{{ "%.1f"|format(goal.progress.required_score) }}%</strong>
+                                        </p>
+                                        {% if goal.progress.required_score > 100 %}
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                Target grade may not be achievable. Consider adjusting your goal.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Remaining Assessments -->
+                                    {% if goal.progress.remaining_assessments %}
+                                        <div class="mt-3">
+                                            <h6>Remaining Assessments:</h6>
+                                            <ul class="list-group">
+                                                {% for assessment in goal.progress.remaining_assessments %}
+                                                <li class="list-group-item">
+                                                    {% if assessment.type == 'assignment' %}
+                                                        <i class="fas fa-tasks me-2"></i>
+                                                        {{ assessment.item.title }} 
+                                                        (Due: {{ assessment.item.due_date.strftime('%Y-%m-%d') }})
+                                                        <span class="badge bg-primary float-end">{{ assessment.item.weight }}%</span>
+                                                    {% elif assessment.type == 'quiz' %}
+                                                        <i class="fas fa-question-circle me-2"></i>
+                                                        {{ assessment.item.title }}
+                                                        ({{ assessment.item.start_time.strftime('%Y-%m-%d') }})
+                                                        <span class="badge bg-info float-end">{{ assessment.item.weight }}%</span>
+                                                    {% else %}
+                                                        <i class="fas fa-file-alt me-2"></i>
+                                                        {{ assessment.item.title }}
+                                                        ({{ assessment.item.exam_date.strftime('%Y-%m-%d') }})
+                                                        <span class="badge bg-warning float-end">{{ assessment.item.weight }}%</span>
+                                                    {% endif %}
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Completed Assessments -->
+                                    {% if goal.progress.completed_assessments %}
+                                        <div class="mt-3">
+                                            <h6>Completed Assessments:</h6>
+                                            <ul class="list-group">
+                                                {% for assessment in goal.progress.completed_assessments %}
+                                                <li class="list-group-item">
+                                                    {% if assessment.type == 'assignment' %}
+                                                        <i class="fas fa-tasks me-2"></i>
+                                                        {{ assessment.item.title }}
+                                                    {% elif assessment.type == 'quiz' %}
+                                                        <i class="fas fa-question-circle me-2"></i>
+                                                        {{ assessment.item.title }}
+                                                    {% else %}
+                                                        <i class="fas fa-file-alt me-2"></i>
+                                                        {{ assessment.item.title }}
+                                                    {% endif %}
+                                                    <span class="badge bg-success float-end">{{ assessment.grade }}%</span>
+                                                    <span class="badge bg-secondary float-end me-2">{{ assessment.item.weight }}%</span>
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Update Goal Button -->
+                                    <button class="btn btn-sm btn-outline-primary mt-2" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#updateGoalModal{{ goal.id }}">
+                                        Update Goal
+                                    </button>
+                                {% else %}
+                                    <p class="text-muted">No assessments remaining</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Update Goal Modal -->
+                            <div class="modal fade" id="updateGoalModal{{ goal.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Update Goal for {{ goal.course.name }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form action="{{ url_for('student.update_module_goal', goal_id=goal.id) }}" method="POST">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Target Grade (%)</label>
+                                                    <input type="number" class="form-control" name="target_grade" 
+                                                           value="{{ goal.target_grade }}" min="0" max="100" step="0.1" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary">Update Goal</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No module goals set yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Set Goals Modal -->
+<div class="modal fade" id="setGoalsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Set Semester Goals</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('student.set_semester_goals') }}" method="POST" id="semesterGoalsForm">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Academic Year</label>
+                            <input type="text" class="form-control" name="academic_year" 
+                                   value="{{ current_academic_year }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Semester</label>
+                            <select class="form-select" name="semester" required>
+                                <option value="Fall">Fall</option>
+                                <option value="Spring">Spring</option>
+                                <option value="Summer">Summer</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Target GPA</label>
+                            <input type="number" class="form-control" name="target_gpa" id="targetGpa"
+                                   min="0" max="4" step="0.1" required>
+                        </div>
+                    </div>
+                    
+                    <h6>Module Goals</h6>
+                    <div class="mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="suggestGoals">
+                            Suggest Goals Based on Target GPA
+                        </button>
+                    </div>
+                    
+                    {% for course in enrolled_courses %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ course.name }}</label>
+                            <input type="hidden" name="course_ids[]" value="{{ course.id }}">
+                            <input type="number" class="form-control" name="module_targets[]" 
+                                   id="moduleTarget{{ course.id }}"
+                                   min="0" max="100" step="0.1" required
+                                   placeholder="Target grade for {{ course.name }}">
+                        </div>
+                    {% endfor %}
+                    
+                    <button type="submit" class="btn btn-primary">Set Goals</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+    
+    // Handle goal suggestions
+    const suggestGoalsBtn = document.getElementById('suggestGoals');
+    if (suggestGoalsBtn) {
+        suggestGoalsBtn.addEventListener('click', function() {
+            const targetGpa = document.getElementById('targetGpa').value;
+            if (!targetGpa) {
+                alert('Please set a target GPA first');
+                return;
+            }
+            
+            fetch("{{ url_for('student.suggest_goals') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `target_gpa=${targetGpa}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                for (const [courseId, suggestedGrade] of Object.entries(data.suggested_goals)) {
+                    const input = document.getElementById(`moduleTarget${courseId}`);
+                    if (input) {
+                        input.value = suggestedGrade;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error getting suggested goals');
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 

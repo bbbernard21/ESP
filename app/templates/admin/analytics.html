@@ -1,0 +1,189 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Analytics Dashboard</h2>
+    <div class="row mt-4">
+        <!-- Top Cards -->
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Students</h5>
+                    <p class="card-text display-6">{{ total_students }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Professors</h5>
+                    <p class="card-text display-6">{{ total_professors }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Courses</h5>
+                    <p class="card-text display-6">{{ total_courses }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Programs</h5>
+                    <p class="card-text display-6">{{ total_programs }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">User Registrations (Last 12 Months)</div>
+                <div class="card-body">
+                    <canvas id="registrationsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">User Roles Distribution</div>
+                <div class="card-body">
+                    <canvas id="rolesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">Students per Program</div>
+                <div class="card-body">
+                    <canvas id="studentsPerProgramChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">Grade Distribution</div>
+                <div class="card-body">
+                    <canvas id="gradeDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Top Courses Table -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card mb-3">
+                <div class="card-header">Top 5 Courses by Enrollment</div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Program</th>
+                                <th>Enrolled Students</th>
+                                <th>Average Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for c in top_courses %}
+                            <tr>
+                                <td>{{ c.name }}</td>
+                                <td>{{ c.program_name }}</td>
+                                <td>{{ c.enrolled_students }}</td>
+                                <td>{{ c.average_grade|round(2) if c.average_grade is not none else 'N/A' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // User Registrations Chart
+    const registrationsCtx = document.getElementById('registrationsChart').getContext('2d');
+    new Chart(registrationsCtx, {
+        type: 'line',
+        data: {
+            labels: {{ registrations_months|default([])|tojson }},
+            datasets: [{
+                label: 'Registrations',
+                data: {{ registrations_counts|default([])|tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {legend: {display: false}},
+            scales: {y: {beginAtZero: true}}
+        }
+    });
+
+    // User Roles Pie Chart
+    const rolesCtx = document.getElementById('rolesChart').getContext('2d');
+    new Chart(rolesCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ roles_labels|default([])|tojson }},
+            datasets: [{
+                data: {{ roles_counts|default([])|tojson }},
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)'
+                ]
+            }]
+        }
+    });
+
+    // Students per Program Bar Chart
+    const sppCtx = document.getElementById('studentsPerProgramChart').getContext('2d');
+    new Chart(sppCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ programs_labels|default([])|tojson }},
+            datasets: [{
+                label: 'Students',
+                data: {{ students_per_program|default([])|tojson }},
+                backgroundColor: 'rgba(255, 99, 132, 0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {legend: {display: false}},
+            scales: {y: {beginAtZero: true}}
+        }
+    });
+
+    // Grade Distribution Histogram
+    const gradesCtx = document.getElementById('gradeDistributionChart').getContext('2d');
+    new Chart(gradesCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ grade_bins|default([])|tojson }},
+            datasets: [{
+                label: 'Number of Students',
+                data: {{ grade_bin_counts|default([])|tojson }},
+                backgroundColor: 'rgba(255, 206, 86, 0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {legend: {display: false}},
+            scales: {y: {beginAtZero: true}}
+        }
+    });
+</script>
+{% endblock %}

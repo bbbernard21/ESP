@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>System Status</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <h5>System Metrics</h5>
+            <ul class="list-group mb-4">
+                <li class="list-group-item">Total Users: {{ metrics.total_users }}</li>
+                <li class="list-group-item">Active Users: {{ metrics.active_users }}</li>
+                <li class="list-group-item">Total Courses: {{ metrics.total_courses }}</li>
+                <li class="list-group-item">Active Courses: {{ metrics.active_courses }}</li>
+                <li class="list-group-item">Total Assignments: {{ metrics.total_assignments }}</li>
+                <li class="list-group-item">Pending Submissions: {{ metrics.pending_submissions }}</li>
+                <li class="list-group-item">Total Notifications: {{ metrics.total_notifications }}</li>
+                <li class="list-group-item">Unread Notifications: {{ metrics.unread_notifications }}</li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h5>Recent Activity</h5>
+            <h6>Recent Logins</h6>
+            <ul class="list-group mb-3">
+                {% for user in recent_logins %}
+                <li class="list-group-item">
+                    {{ user.first_name }} {{ user.last_name }} &mdash; {{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}
+                </li>
+                {% else %}
+                <li class="list-group-item">No recent logins.</li>
+                {% endfor %}
+            </ul>
+            <h6>Recent Assignment Submissions</h6>
+            <ul class="list-group">
+                {% for submission in recent_submissions %}
+                <li class="list-group-item">
+                    {{ submission.student.first_name }} {{ submission.student.last_name }} submitted {{ submission.assignment.title }} at {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}
+                </li>
+                {% else %}
+                <li class="list-group-item">No recent submissions.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

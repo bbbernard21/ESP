@@ -1,0 +1,32 @@
+{% extends "professor/base.html" %}
+{% block content %}
+<h2>Student Progress: {{ student.full_name or student.username }}</h2>
+<p><strong>Course:</strong> {{ course.name }}</p>
+{% if record %}
+<p><strong>Status:</strong> {{ record.status }}</p>
+{% endif %}
+<h3>Assignments</h3>
+<ul>
+  {% for assignment in assignments %}
+    <li>{{ assignment.title }} - 
+      {% for submission in submissions %}
+        {% if submission.assignment_id == assignment.id %}
+          Grade: {{ submission.grade or 'Not graded' }}
+        {% endif %}
+      {% endfor %}
+    </li>
+  {% endfor %}
+</ul>
+<h3>Exams</h3>
+<ul>
+  {% for exam in exams %}
+    <li>{{ exam.title }} - 
+      {% for grade in exam_grades %}
+        {% if grade.exam_id == exam.id %}
+          Grade: {{ grade.grade or 'Not graded' }}
+        {% endif %}
+      {% endfor %}
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'professor/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Early Warning System</h2>
+    <form method="post">
+        <button type="submit" class="btn btn-warning mb-3">Run Early Warning Check</button>
+    </form>
+    {% if results is not none %}
+        <div class="card mt-3">
+            <div class="card-header">Flagged At-Risk Students</div>
+            <div class="card-body">
+                {% if results|length == 0 %}
+                    <p class="text-success">No students flagged as at-risk.</p>
+                {% else %}
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Reasons</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in results %}
+                            <tr>
+                                <td>{{ entry.student_id }}</td>
+                                <td>
+                                    <ul>
+                                    {% for reason in entry.reasons %}
+                                        <li>{{ reason }}</li>
+                                    {% endfor %}
+                                    </ul>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
