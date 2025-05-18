@@ -30,7 +30,7 @@
                                     {% for conv in direct_conversations %}
                                         {% set other_user = conv.user2 if conv.user1_id == current_user.id else conv.user1 %}
                                         <a href="#" class="list-group-item list-group-item-action" 
-                                           onclick="loadDirectMessages({{ conv.id }})">
+                                           onclick="loadDirectMessagesAndMarkRead({{ conv.id }}, this)">
                                             <div class="d-flex w-100 justify-content-between">
                                                 <h6 class="mb-1">{{ other_user.first_name }} {{ other_user.last_name }}</h6>
                                                 <small>{{ conv.updated_at.strftime('%Y-%m-%d %H:%M') }}</small>
@@ -56,7 +56,7 @@
                                 <div class="list-group">
                                     {% for chat in group_chats %}
                                         <a href="#" class="list-group-item list-group-item-action"
-                                           onclick="loadGroupMessages({{ chat.id }})">
+                                           onclick="loadGroupMessagesAndMarkRead({{ chat.id }}, this)">
                                             <div class="d-flex w-100 justify-content-between">
                                                 <h6 class="mb-1">{{ chat.name }}</h6>
                                                 <small>{{ chat.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
@@ -92,10 +92,17 @@
                         <p class="text-center text-muted">Select a conversation to view messages</p>
                     </div>
                     <form id="message-form" class="d-none">
+                        <div class="mb-3">
+                            <div id="rich-text-editor"></div>
+                        </div>
                         <div class="input-group">
-                            <input type="text" class="form-control" id="message-input" placeholder="Type your message...">
+                            <input type="file" class="form-control" id="message-attachment" multiple>
+                            <button class="btn btn-outline-secondary" type="button" id="emoji-picker-btn">
+                                <i class="far fa-smile"></i>
+                            </button>
                             <button class="btn btn-primary" type="submit">Send</button>
                         </div>
+                        <div id="attachment-preview" class="mt-2"></div>
                     </form>
                 </div>
             </div>
@@ -139,7 +146,12 @@
     </div>
 </div>
 
-{% block scripts %}
+<!-- Add required scripts -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emoji-mart/data"></script>
+<script src="https://cdn.jsdelivr.net/npm/emoji-mart"></script>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
 <script>
 let currentConversationId = null;
 let currentChatType = null;
@@ -188,6 +200,35 @@ function loadGroupMessages(chatId) {
 }
 
 function displayMessages(messages) {
+    // Helper to format markdown/code in chatbot messages
+    function formatMessageBody(text) {
+        if (!text) return '';
+        let formatted = text;
+        // Format code blocks (```...```)
+        formatted = formatted.replace(/```([\s\S]*?)```/g, function(match, code) {
+            return '<pre class="bg-light p-2 rounded"><code>' +
+                code.replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+                '</code></pre>';
+        });
+        // Format inline code (`...`)
+        formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-light px-1 rounded">$1</code>');
+        // Format lists
+        formatted = formatted.replace(/\n\s*[-*] (.+)/g, '<li>$1</li>');
+        formatted = formatted.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+        // Format headings (##, ###, ####)
+        formatted = formatted.replace(/###### (.*)/g, '<h6>$1</h6>');
+        formatted = formatted.replace(/##### (.*)/g, '<h5>$1</h5>');
+        formatted = formatted.replace(/#### (.*)/g, '<h4>$1</h4>');
+        formatted = formatted.replace(/### (.*)/g, '<h3>$1</h3>');
+        formatted = formatted.replace(/## (.*)/g, '<h2>$1</h2>');
+        formatted = formatted.replace(/# (.*)/g, '<h1>$1</h1>');
+        // Format bold/italic
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Format newlines to <br>, but not inside <pre>
+        formatted = formatted.replace(/([^>])\n/g, '$1<br>');
+        return formatted;
+    }
     console.log("Displaying messages:", messages); // Debug log
     const container = document.getElementById('messages-container');
     if (!messages || messages.length === 0) {
@@ -200,11 +241,36 @@ function displayMessages(messages) {
         const messageClass = isCurrentUser ? 'text-end' : 'text-start';
         const bubbleClass = isCurrentUser ? 'bg-primary text-white' : 'bg-light';
         
+        let attachmentsHtml = '';
+        if (msg.attachments && msg.attachments.length > 0) {
+            attachmentsHtml = msg.attachments.map(att => {
+                if (att.file_type && att.file_type.startsWith('image/')) {
+                    return `
+                        <div class="message-attachment mb-2">
+                            <a href="/static/${att.file_path}" target="_blank">
+                                <img src="/static/${att.file_path}" class="img-thumbnail" style="max-height: 200px;">
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    const fileIcon = getFileIcon(att.filename);
+                    return `
+                        <div class="message-attachment mb-2">
+                            <a href="/static/${att.file_path}" class="btn btn-sm btn-outline-${isCurrentUser ? 'light' : 'secondary'}" target="_blank">
+                                <i class="${fileIcon} me-1"></i> ${att.filename}
+                            </a>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+        
         return `
             <div class="message ${messageClass} mb-3">
                 <div class="d-inline-block ${bubbleClass} p-2 rounded">
                     <small class="d-block ${isCurrentUser ? 'text-white-50' : 'text-muted'}">${isCurrentUser ? 'You' : msg.sender_name}</small>
-                    <div class="message-content">${msg.body}</div>
+                    <div class="message-content">${formatMessageBody(msg.body)}</div>
+                    ${attachmentsHtml}
                     <small class="d-block ${isCurrentUser ? 'text-white-50' : 'text-muted'}">${msg.timestamp}</small>
                 </div>
             </div>
@@ -215,13 +281,65 @@ function displayMessages(messages) {
     container.scrollTop = container.scrollHeight;
 }
 
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    switch (ext) {
+        case 'pdf':
+            return 'fas fa-file-pdf';
+        case 'doc':
+        case 'docx':
+            return 'fas fa-file-word';
+        case 'xls':
+        case 'xlsx':
+            return 'fas fa-file-excel';
+        case 'zip':
+        case 'rar':
+            return 'fas fa-file-archive';
+        case 'txt':
+            return 'fas fa-file-alt';
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif':
+            return 'fas fa-file-image';
+        default:
+            return 'fas fa-file';
+    }
+}
+
 function addMessageToDisplay(message) {
     const container = document.getElementById('messages-container');
+    
+    let attachmentsHtml = '';
+    if (message.attachments && message.attachments.length > 0) {
+        attachmentsHtml = message.attachments.map(att => {
+            if (att.file_type && att.file_type.startsWith('image/')) {
+                return `
+                    <div class="message-attachment mb-2">
+                        <a href="/static/${att.file_path}" target="_blank">
+                            <img src="/static/${att.file_path}" class="img-thumbnail" style="max-height: 200px;">
+                        </a>
+                    </div>
+                `;
+            } else {
+                const fileIcon = getFileIcon(att.filename);
+                return `
+                    <div class="message-attachment mb-2">
+                        <a href="/static/${att.file_path}" class="btn btn-sm btn-outline-light" target="_blank">
+                            <i class="${fileIcon} me-1"></i> ${att.filename}
+                        </a>
+                    </div>
+                `;
+            }
+        }).join('');
+    }
+    
     const messageHtml = `
         <div class="message text-end mb-3">
             <div class="d-inline-block bg-primary text-white p-2 rounded">
                 <small class="d-block text-white-50">You</small>
                 <div class="message-content">${message.body}</div>
+                ${attachmentsHtml}
                 <small class="d-block text-white-50">${message.timestamp}</small>
             </div>
         </div>
@@ -230,45 +348,102 @@ function addMessageToDisplay(message) {
     container.scrollTop = container.scrollHeight;
 }
 
-document.getElementById('message-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const messageText = document.getElementById('message-input').value;
-    if (!messageText) return;
-    
-    fetch('/api/messages/send', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            chat_id: currentConversationId,
-            message: messageText
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Send message response:", data); // Debug log
-        if (data.success) {
-            // Clear the input
-            document.getElementById('message-input').value = '';
-            
-            // Add message to display immediately
-            addMessageToDisplay(data.message);
-            
-            // Set up periodic refresh
-            if (!window.messageRefreshInterval) {
-                window.messageRefreshInterval = setInterval(() => {
-                    if (currentChatType === 'direct') {
-                        loadDirectMessages(currentConversationId);
-                    } else {
-                        loadGroupMessages(currentConversationId);
-                    }
-                }, 5000); // Refresh every 5 seconds
-            }
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill rich text editor
+    var quill = new Quill('#rich-text-editor', {
+        theme: 'snow',
+        placeholder: 'Type your message...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['link'],
+                ['clean']
+            ]
         }
-    })
-    .catch(error => {
-        console.error('Error sending message:', error);
+    });
+
+    // Handle file attachments preview
+    const attachmentInput = document.getElementById('message-attachment');
+    const previewDiv = document.getElementById('attachment-preview');
+
+    attachmentInput.addEventListener('change', function(e) {
+        previewDiv.innerHTML = '';
+        Array.from(this.files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewDiv.innerHTML += `
+                        <div class="attachment-preview-item">
+                            <img src="${e.target.result}" style="max-height: 100px; max-width: 100px; margin: 5px;">
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewDiv.innerHTML += `
+                    <div class="attachment-preview-item">
+                        <i class="fas fa-file"></i> ${file.name}
+                    </div>
+                `;
+            }
+        });
+    });
+
+    // Handle message form submission
+    const messageForm = document.getElementById('message-form');
+    messageForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        formData.append('content', quill.root.innerHTML);
+        formData.append('content_type', 'rich_text');
+        formData.append('chat_id', currentConversationId);
+        
+        // Debug log the form data before sending
+        console.log('Current conversation ID:', currentConversationId);
+        console.log('Content:', quill.root.innerHTML);
+        
+        // Append files if any
+        const files = attachmentInput.files;
+        console.log('Files to upload:', files);
+        for (let i = 0; i < files.length; i++) {
+            console.log('Appending file:', files[i].name);
+            formData.append('attachments[]', files[i], files[i].name);
+        }
+
+        // Debug log the FormData contents
+        for (let pair of formData.entries()) {
+            console.log(pair[0], pair[1]);
+        }
+
+        try {
+            const response = await fetch('/api/messages/send', {
+                method: 'POST',
+                body: formData  // Don't set Content-Type header - browser will set it with boundary
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Message sent response:", data);  // Debug log
+                
+                // Clear form
+                quill.setContents([]);
+                attachmentInput.value = '';
+                previewDiv.innerHTML = '';
+                
+                // Add message to display immediately
+                if (data.success && data.message) {
+                    addMessageToDisplay(data.message);
+                }
+            } else {
+                const errorData = await response.json();
+                console.error('Error response:', errorData);
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
     });
 });
 
@@ -304,6 +479,50 @@ window.onbeforeunload = function() {
         clearInterval(window.messageRefreshInterval);
     }
 };
+// Mark all direct messages in a conversation as read and update badges
+function loadDirectMessagesAndMarkRead(conversationId, linkElem) {
+    loadDirectMessages(conversationId);
+    fetch(`/api/messages/direct/${conversationId}/mark_read`, {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove blue badge
+                const badge = linkElem.querySelector('.badge.bg-primary');
+                if (badge) badge.remove();
+                // Update message badge in navbar
+                updateMessageBadge();
+            }
+        });
+}
+// Mark all group messages as read and update badges
+function loadGroupMessagesAndMarkRead(chatId, linkElem) {
+    loadGroupMessages(chatId);
+    fetch(`/api/messages/group/${chatId}/mark_read`, {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const badge = linkElem.querySelector('.badge.bg-primary');
+                if (badge) badge.remove();
+                updateMessageBadge();
+            }
+        });
+}
+// Fetch and update the unread message badge in the navbar
+function updateMessageBadge() {
+    fetch('/api/messages/unread_count')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.querySelector('.nav-link .badge.bg-danger');
+            if (badge) {
+                if (data.unread_count > 0) {
+                    badge.textContent = data.unread_count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.textContent = '';
+                    badge.style.display = 'none';
+                }
+            }
+        });
+}
 </script>
-{% endblock %}
 {% endblock %} 

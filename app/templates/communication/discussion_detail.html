@@ -44,8 +44,28 @@
                                         <small class="text-muted">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                                     </div>
                                     <div class="post-content mb-2">
-                                        {{ post.content }}
+                                        {% if post.content_type == 'rich_text' %}
+                                            {{ post.content|safe }}
+                                        {% else %}
+                                            {{ post.content }}
+                                        {% endif %}
                                     </div>
+                                    {% if post.attachments %}
+                                    <div class="attachments mb-2">
+                                        {% for attachment in post.attachments %}
+                                            {% if attachment.file_type.startswith('image/') %}
+                                                <img src="{{ url_for('static', filename=attachment.file_path) }}" 
+                                                     class="attachment-img img-thumbnail" 
+                                                     style="max-height: 200px;">
+                                            {% else %}
+                                                <a href="{{ url_for('student.download_discussion_attachment', attachment_id=attachment.id) }}" 
+                                                   class="attachment-file">
+                                                    <i class="fas fa-file"></i> {{ attachment.filename }}
+                                                </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
                                     <div class="post-actions">
                                         <button class="btn btn-sm btn-link text-muted" 
                                                 onclick="showReplyForm('{{ post.id }}')">
@@ -54,10 +74,15 @@
                                     </div>
                                     <!-- Reply Form (hidden by default) -->
                                     <div class="reply-form mt-2" id="reply-form-{{ post.id }}" style="display: none;">
-                                        <form method="POST" action="{{ url_for('student.add_discussion_post', discussion_id=discussion.id) }}">
+                                        <form method="POST" action="{{ url_for('student.add_discussion_post', discussion_id=discussion.id) }}" enctype="multipart/form-data">
                                             <input type="hidden" name="parent_id" value="{{ post.id }}">
                                             <div class="mb-2">
-                                                <textarea class="form-control" name="content" rows="2" required></textarea>
+                                                <div id="reply-editor-{{ post.id }}"></div>
+                                                <input type="hidden" name="content" id="reply-content-{{ post.id }}">
+                                                <input type="hidden" name="content_type" value="rich_text">
+                                            </div>
+                                            <div class="mb-2">
+                                                <input type="file" class="form-control" name="attachments[]" multiple>
                                             </div>
                                             <div class="d-flex justify-content-end">
                                                 <button type="button" class="btn btn-sm btn-link" 
@@ -102,10 +127,16 @@
 
                     <!-- New Post Form -->
                     <div class="new-post-form mt-4">
-                        <h5 class="mb-3">Add a Post</h5>
-                        <form method="POST" action="{{ url_for('student.add_discussion_post', discussion_id=discussion.id) }}">
+                        <h5 class="mb-3">Add a New Post</h5>
+                        <form method="POST" action="{{ url_for('student.add_discussion_post', discussion_id=discussion.id) }}" enctype="multipart/form-data">
                             <div class="mb-3">
-                                <textarea class="form-control" name="content" rows="3" required></textarea>
+                                <div id="new-post-editor"></div>
+                                <input type="hidden" name="content" id="new-post-content">
+                                <input type="hidden" name="content_type" value="rich_text">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Attachments</label>
+                                <input type="file" class="form-control" name="attachments[]" multiple>
                             </div>
                             <button type="submit" class="btn btn-primary">Post</button>
                         </form>
@@ -115,10 +146,55 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<!-- Add required scripts -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill editor for new posts
+    var newPostQuill = new Quill('#new-post-editor', {
+        theme: 'snow',
+        placeholder: 'Write your post here...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['link'],
+                ['clean']
+            ]
+        }
+    });
+
+    // Handle new post form submission
+    document.querySelector('.new-post-form form').addEventListener('submit', function() {
+        document.getElementById('new-post-content').value = newPostQuill.root.innerHTML;
+    });
+
+    // Initialize Quill editors for reply forms
+    document.querySelectorAll('[id^="reply-editor-"]').forEach(function(editorElement) {
+        const postId = editorElement.id.split('-').pop();
+        const quill = new Quill(editorElement, {
+            theme: 'snow',
+            placeholder: 'Write your reply...',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    ['link'],
+                    ['clean']
+                ]
+            }
+        });
+
+        // Handle reply form submission
+        document.querySelector(`#reply-form-${postId} form`).addEventListener('submit', function() {
+            document.getElementById(`reply-content-${postId}`).value = quill.root.innerHTML;
+        });
+    });
+});
+
 function showReplyForm(postId) {
     document.getElementById(`reply-form-${postId}`).style.display = 'block';
 }

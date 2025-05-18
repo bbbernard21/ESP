@@ -1,14 +1,46 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from datetime import datetime
+import os
+from werkzeug.utils import secure_filename
 from app.models.communication import (
     Message, Conversation, Notification, Discussion, DiscussionPost,
-    GroupChat, ChatParticipant, ChatMessage, ChatMessageRead
+    GroupChat, ChatParticipant, ChatMessage, ChatMessageRead, Attachment
 )
 from app.models.user import User, UserRole
-from app import db
+from app import db, socketio
 
 communication = Blueprint('communication', __name__)
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'mp3', 'mp4'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_attachment(file):
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Create unique filename to prevent overwrites
+        unique_filename = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{filename}"
+        
+        # Create uploads directory inside static folder if it doesn't exist
+        upload_dir = os.path.join('static', 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Save file path relative to static folder
+        file_path = os.path.join('uploads', unique_filename)
+        # Full path for saving the file
+        full_path = os.path.join(current_app.root_path, 'static', file_path)
+        
+        # Save file
+        file.save(full_path)
+        
+        return Attachment(
+            filename=filename,
+            file_path=file_path,  # Store relative path
+            file_type=file.content_type,
+            file_size=os.path.getsize(full_path)
+        )
+    return None
 
 @communication.route('/messages')
 @login_required
@@ -33,8 +65,8 @@ def messages():
         .order_by(GroupChat.created_at.desc())
         .all())
     
-    # Get all users except current user for new message/group creation
-    available_users = User.query.filter(User.id != current_user.id).all()
+    # All users except current user and admins for new message modal
+    available_users = User.query.filter(User.id != current_user.id, User.role != UserRole.ADMIN.value).all()
     
     # Determine which base template to use
     is_student = current_user.role == UserRole.STUDENT.value
@@ -95,15 +127,21 @@ def get_direct_messages(conversation_id):
         
         # Debug print
         print(f"Found {len(messages)} messages")  # Debug log
-        print("Messages being sent:", [{"id": msg.id, "body": msg.body, "sender_id": msg.sender_id, "timestamp": msg.timestamp} for msg in messages])
         
         message_list = [{
             'id': msg.id,
             'sender_id': msg.sender_id,
             'sender_name': msg.sender.first_name,
             'body': msg.body,
+            'content_type': msg.content_type,
             'timestamp': msg.timestamp.strftime('%H:%M'),
-            'read': msg.read
+            'read': msg.read,
+            'attachments': [{
+                'id': att.id,
+                'filename': att.filename,
+                'file_path': att.file_path,
+                'file_type': att.file_type
+            } for att in msg.attachments]
         } for msg in messages]
         
         print("Formatted messages:", message_list)  # Additional debug print
@@ -163,44 +201,66 @@ def get_group_messages(chat_id):
             'sender_id': msg.sender_id,
             'sender_name': msg.sender.first_name,
             'body': msg.body,
+            'content_type': msg.content_type,
             'timestamp': msg.timestamp.strftime('%H:%M'),
-            'read_by': [read.user_id for read in msg.read_by]
+            'read_by': [read.user_id for read in msg.read_by],
+            'attachments': [{
+                'id': att.id,
+                'filename': att.filename,
+                'file_path': att.file_path,
+                'file_type': att.file_type
+            } for att in msg.attachments]
         } for msg in messages]
     })
 
 @communication.route('/api/messages/send', methods=['POST'])
 @login_required
 def send_message():
-    data = request.get_json()
-    chat_id = data.get('chat_id')
-    message_text = data.get('message')
+    chat_id = request.form.get('chat_id')
+    content = request.form.get('content')
+    content_type = request.form.get('content_type', 'text')
     
-    print(f"Sending message: chat_id={chat_id}, text={message_text}")  # Debug log
+    print("Received message request:")
+    print(f"chat_id: {chat_id}")
+    print(f"content: {content}")
+    print(f"content_type: {content_type}")
+    print(f"Files in request: {request.files}")
     
-    if not chat_id or not message_text:
+    if not chat_id or not content:
         return jsonify({'error': 'Missing required fields'}), 400
     
     try:
-        # First check if this is a direct conversation
+        # Handle direct conversation
         conversation = Conversation.query.get(chat_id)
         if conversation:
-            print(f"Found direct conversation: {conversation.id}")  # Debug log
-            
             if current_user.id not in [conversation.user1_id, conversation.user2_id]:
                 return jsonify({'error': 'Unauthorized'}), 403
             
             recipient_id = conversation.user2_id if conversation.user1_id == current_user.id else conversation.user1_id
-            print(f"Recipient ID: {recipient_id}")  # Debug log
             
             message = Message(
                 conversation_id=chat_id,
                 sender_id=current_user.id,
                 recipient_id=recipient_id,
-                body=message_text,
+                body=content,
+                content_type=content_type,
                 timestamp=datetime.utcnow()
             )
             db.session.add(message)
-            print(f"Created direct message object: {message.body}")  # Debug log
+            
+            # Handle attachments
+            files = request.files.getlist('attachments[]')
+            print(f"Processing {len(files)} files")
+            
+            for file in files:
+                print(f"Processing file: {file.filename}, type: {file.content_type}")
+                attachment = save_attachment(file)
+                if attachment:
+                    print(f"Created attachment: {attachment.filename}, path: {attachment.file_path}")
+                    attachment.message = message
+                    db.session.add(attachment)
+                else:
+                    print(f"Failed to create attachment for file: {file.filename}")
             
             conversation.updated_at = datetime.utcnow()
             
@@ -214,88 +274,135 @@ def send_message():
             
             db.session.commit()
             
-            saved_message = Message.query.get(message.id)
-            if saved_message:
-                print(f"Successfully saved direct message with ID: {saved_message.id}, body: {saved_message.body}")
-                
-                conversation_messages = Message.query.filter_by(conversation_id=chat_id).all()
-                print(f"All messages in conversation {chat_id}: {[(m.id, m.body) for m in conversation_messages]}")
-                
-                return jsonify({
-                    'success': True,
-                    'message': {
-                        'id': saved_message.id,
-                        'sender_id': saved_message.sender_id,
-                        'sender_name': current_user.first_name,
-                        'body': saved_message.body,
-                        'timestamp': saved_message.timestamp.strftime('%H:%M'),
-                        'read': False
-                    }
-                })
-            else:
-                print("Error: Direct message was not found after saving")
-                return jsonify({'error': 'Message was not saved properly'}), 500
-        
-        # If not a direct conversation, check for group chat
+            # Emit new message event to recipient(s)
+            socketio.emit('new_message', {
+                'conversation_id': conversation.id,
+                'sender_id': message.sender_id,
+                'sender_name': current_user.first_name,
+                'body': message.body,
+                'content_type': message.content_type,
+                'timestamp': message.timestamp.strftime('%H:%M'),
+                'attachments': [{
+                    'id': att.id,
+                    'filename': att.filename,
+                    'file_path': att.file_path,
+                    'file_type': att.file_type
+                } for att in message.attachments]
+            }, room=str(recipient_id))
+            
+            # Emit new notification event to recipient
+            socketio.emit('new_notification', {
+                'notification_id': notification.id,
+                'title': notification.title,
+                'body': notification.body,
+                'category': notification.category
+            }, room=str(recipient_id))
+            
+            # Verify attachments after commit
+            message = Message.query.get(message.id)
+            print(f"Message attachments after commit: {[att.filename for att in message.attachments]}")
+            
+            return jsonify({
+                'success': True,
+                'message': {
+                    'id': message.id,
+                    'sender_id': message.sender_id,
+                    'sender_name': current_user.first_name,
+                    'body': message.body,
+                    'content_type': message.content_type,
+                    'timestamp': message.timestamp.strftime('%H:%M'),
+                    'read': False,
+                    'attachments': [{
+                        'id': att.id,
+                        'filename': att.filename,
+                        'file_path': att.file_path,
+                        'file_type': att.file_type
+                    } for att in message.attachments]
+                }
+            })
+            
+        # Handle group chat
         group_chat = GroupChat.query.get(chat_id)
         if group_chat:
-            print(f"Found group chat: {group_chat.id}")  # Debug log
-            
             # Check if user is participant
             participant = ChatParticipant.query.filter_by(
                 chat_id=chat_id,
                 user_id=current_user.id
             ).first_or_404()
             
-            # Create and save new message
             message = ChatMessage(
                 chat_id=chat_id,
                 sender_id=current_user.id,
-                body=message_text,
-                timestamp=datetime.utcnow()
+                body=content,
+                content_type=content_type
             )
             db.session.add(message)
-            print(f"Created group message object: {message.body}")  # Debug log
             
-            # Create notifications for other participants
-            for participant in group_chat.participants:
-                if participant.user_id != current_user.id:
-                    notification = Notification(
-                        user_id=participant.user_id,
-                        title="New Message",
-                        body=f"New message from {current_user.first_name} in {group_chat.name or 'chat'}",
-                        category="message"
-                    )
-                    db.session.add(notification)
+            # Handle attachments
+            files = request.files.getlist('attachments[]')
+            for file in files:
+                attachment = save_attachment(file)
+                if attachment:
+                    attachment.chat_message = message
+                    db.session.add(attachment)
             
             db.session.commit()
             
-            saved_message = ChatMessage.query.get(message.id)
-            if saved_message:
-                print(f"Successfully saved group message with ID: {saved_message.id}, body: {saved_message.body}")
-                return jsonify({
-                    'success': True,
-                    'message': {
-                        'id': saved_message.id,
-                        'sender_id': saved_message.sender_id,
+            # Emit new message event to all participants except sender
+            for participant in group_chat.participants:
+                if participant.user_id != current_user.id:
+                    # Create notification for group message
+                    notification = Notification(
+                        user_id=participant.user_id,
+                        title="New Group Message",
+                        body=f"New message in group '{group_chat.name}' from {current_user.first_name}",
+                        category="group_message"
+                    )
+                    db.session.add(notification)
+                    db.session.commit()
+                    socketio.emit('new_group_message', {
+                        'chat_id': group_chat.id,
+                        'sender_id': message.sender_id,
                         'sender_name': current_user.first_name,
-                        'body': saved_message.body,
-                        'timestamp': saved_message.timestamp.strftime('%H:%M'),
-                        'read_by': []
-                    }
-                })
-            else:
-                print("Error: Group message was not found after saving")
-                return jsonify({'error': 'Message was not saved properly'}), 500
-        
-        # If we get here, neither conversation nor group chat was found
-        print(f"Error: No conversation or group chat found with ID: {chat_id}")
-        return jsonify({'error': 'Invalid chat ID'}), 404
-                
+                        'body': message.body,
+                        'content_type': message.content_type,
+                        'timestamp': message.timestamp.strftime('%H:%M'),
+                        'attachments': [{
+                            'id': att.id,
+                            'filename': att.filename,
+                            'file_path': att.file_path,
+                            'file_type': att.file_type
+                        } for att in message.attachments]
+                    }, room=str(participant.user_id))
+                    # Emit new notification event
+                    socketio.emit('new_notification', {
+                        'notification_id': notification.id,
+                        'title': notification.title,
+                        'body': notification.body,
+                        'category': notification.category
+                    }, room=str(participant.user_id))
+            
+            return jsonify({
+                'success': True,
+                'message': {
+                    'id': message.id,
+                    'sender_id': message.sender_id,
+                    'sender_name': current_user.first_name,
+                    'body': message.body,
+                    'content_type': message.content_type,
+                    'timestamp': message.timestamp.strftime('%H:%M'),
+                    'attachments': [{
+                        'id': att.id,
+                        'filename': att.filename,
+                        'file_path': att.file_path,
+                        'file_type': att.file_type
+                    } for att in message.attachments]
+                }
+            })
+            
     except Exception as e:
-        print(f"Error saving message: {str(e)}")
-        db.session.rollback()
-        return jsonify({'error': 'Failed to save message'}), 500
+        print(f"Error sending message: {str(e)}")
+        return jsonify({'error': 'Failed to send message'}), 500
 
 @communication.route('/api/conversations/new', methods=['POST'])
 @login_required
@@ -371,9 +478,60 @@ def mark_notification_read():
         
         notification.mark_as_read()
         db.session.commit()
+        # Emit real-time event to update notification badge
+        socketio.emit('notification_read', {'notification_id': notification.id}, room=str(notification.user_id))
         return jsonify({'success': True})
     
     return jsonify({'error': 'Missing notification ID'}), 400
+
+@communication.route('/api/notifications/unread_count')
+@login_required
+def unread_notification_count():
+    count = current_user.get_unread_notifications_count()
+    return jsonify({'unread_count': count})
+
+@communication.route('/api/messages/direct/<int:conversation_id>/mark_read', methods=['POST'])
+@login_required
+def mark_direct_messages_read(conversation_id):
+    from app.models.communication import Message, Conversation
+    conversation = Conversation.query.get_or_404(conversation_id)
+    if current_user.id not in [conversation.user1_id, conversation.user2_id]:
+        return jsonify({'error': 'Unauthorized'}), 403
+    unread_msgs = Message.query.filter_by(conversation_id=conversation_id, recipient_id=current_user.id, read=False).all()
+    for msg in unread_msgs:
+        msg.read = True
+        msg.read_at = datetime.utcnow()
+    db.session.commit()
+    # Emit real-time event to update message badge
+    socketio.emit('message_read', {'chat_id': conversation_id}, room=str(current_user.id))
+    return jsonify({'success': True})
+
+@communication.route('/api/messages/group/<int:chat_id>/mark_read', methods=['POST'])
+@login_required
+def mark_group_messages_read(chat_id):
+    from app.models.communication import ChatMessage, ChatMessageRead, ChatParticipant
+    chat_participant = ChatParticipant.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    if not chat_participant:
+        return jsonify({'error': 'Unauthorized'}), 403
+    unread_msgs = (ChatMessage.query
+        .filter(ChatMessage.chat_id == chat_id, ChatMessage.sender_id != current_user.id)
+        .outerjoin(ChatMessageRead, (ChatMessageRead.message_id == ChatMessage.id) & (ChatMessageRead.user_id == current_user.id))
+        .filter(ChatMessageRead.id.is_(None))
+        .all())
+    for msg in unread_msgs:
+        read_entry = ChatMessageRead(user_id=current_user.id, message_id=msg.id)
+        db.session.add(read_entry)
+    db.session.commit()
+    # Emit real-time event to update message badge
+    socketio.emit('message_read', {'chat_id': chat_id}, room=str(current_user.id))
+    return jsonify({'success': True})
+
+@communication.route('/api/messages/unread_count')
+@login_required
+def unread_message_count():
+    count = current_user.get_unread_messages_count()
+    return jsonify({'unread_count': count})
+
 
 @communication.route('/api/notifications/mark_all_read', methods=['POST'])
 @login_required
@@ -502,3 +660,64 @@ def manage_participants(group_id):
             return jsonify({'success': True})
     
     return jsonify({'error': 'Invalid action'}), 400 
+
+@communication.route('/student/discussion/<int:discussion_id>/post', methods=['POST'])
+@login_required
+def add_discussion_post(discussion_id):
+    discussion = Discussion.query.get_or_404(discussion_id)
+    content = request.form.get('content')
+    content_type = request.form.get('content_type', 'text')
+    parent_id = request.form.get('parent_id')
+    
+    if not content:
+        flash('Post content is required.', 'error')
+        return redirect(url_for('student.discussion_detail', discussion_id=discussion_id))
+    
+    try:
+        post = DiscussionPost(
+            content=content,
+            content_type=content_type,
+            discussion_id=discussion_id,
+            author_id=current_user.id,
+            parent_id=parent_id if parent_id else None
+        )
+        db.session.add(post)
+        
+        # Handle attachments
+        files = request.files.getlist('attachments[]')
+        for file in files:
+            attachment = save_attachment(file)
+            if attachment:
+                attachment.discussion_post = post
+                db.session.add(attachment)
+        
+        db.session.commit()
+        flash('Your post has been added.', 'success')
+
+        # Emit new notification event to all discussion participants except the author
+        participant_ids = set(
+            p.author_id for p in DiscussionPost.query.filter_by(discussion_id=discussion_id).all()
+            if p.author_id != current_user.id
+        )
+        for user_id in participant_ids:
+            notification = Notification(
+                user_id=user_id,
+                title="New Discussion Post",
+                body=f"New post in discussion '{discussion.title}' by {current_user.first_name}",
+                category="discussion"
+            )
+            db.session.add(notification)
+            db.session.commit()
+            socketio.emit('new_notification', {
+                'notification_id': notification.id,
+                'title': notification.title,
+                'body': notification.body,
+                'category': notification.category
+            }, room=str(user_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Error adding post. Please try again.', 'error')
+        print(f"Error adding discussion post: {str(e)}")
+    
+    return redirect(url_for('student.discussion_detail', discussion_id=discussion_id)) 

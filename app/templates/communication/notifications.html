@@ -58,38 +58,62 @@
 {% block scripts %}
 <script>
 function markAsRead(notificationId) {
-    fetch(`/mark_notification_read/${notificationId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const notification = document.querySelector(`#notification-${notificationId}`);
+    fetch('/api/notifications/mark_read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notification_id: notificationId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const notification = document.querySelector(`#notification-${notificationId}`);
+            if (notification) {
                 notification.classList.remove('unread');
                 const button = notification.querySelector('button');
                 const timestamp = new Date().toLocaleString();
-                button.parentNode.innerHTML = `<small class="text-muted">Read on ${timestamp}</small>`;
-                updateNotificationCount();
+                if (button && button.parentNode) {
+                    button.parentNode.innerHTML = `<small class="text-muted">Read on ${timestamp}</small>`;
+                }
+            }
+            updateNotificationCount();
+        }
+    });
+}
+
+function markAllAsRead() {
+    fetch('/api/notifications/mark_all_read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function updateNotificationCount() {
+    fetch('/api/notifications/unread_count')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.querySelector('#notification-badge');
+            if (badge) {
+                if (data.unread_count > 0) {
+                    badge.textContent = data.unread_count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.textContent = '';
+                    badge.style.display = 'none';
+                }
             }
         });
 }
 
-function markAllAsRead() {
-    const unreadNotifications = document.querySelectorAll('.unread');
-    unreadNotifications.forEach(notification => {
-        const notificationId = notification.id.split('-')[1];
-        markAsRead(notificationId);
-    });
-}
-
-function updateNotificationCount() {
-    const badge = document.querySelector('#notification-badge');
-    if (badge) {
-        const currentCount = parseInt(badge.textContent);
-        if (currentCount > 1) {
-            badge.textContent = currentCount - 1;
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-}
 </script>
 {% endblock %} 

@@ -2,7 +2,9 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models.user import User, UserRole
-from app.models.academic import Course, Program, AcademicRecord
+from app.models.academic import Course, Program, AcademicRecord, Assignment, AssignmentSubmission
+from app.models.communication import Notification
+
 from app.decorators import admin_required
 from datetime import datetime
 
@@ -33,6 +35,70 @@ def dashboard():
                          total_programs=total_programs,
                          recent_users=recent_users,
                          active_courses=active_courses)
+
+@admin.route('/admin/profile', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_profile():
+    if request.method == 'POST':
+        # Update profile info
+        current_user.first_name = request.form['first_name']
+        current_user.last_name = request.form['last_name']
+        current_user.email = request.form['email']
+        db.session.commit()
+        flash('Profile updated successfully.', 'success')
+        return redirect(url_for('admin.admin_profile'))
+    return render_template('admin/profile.html', title='Admin Profile')
+
+@admin.route('/admin/change_password', methods=['POST'])
+@login_required
+@admin_required
+def change_admin_password():
+    current_password = request.form['current_password']
+    new_password = request.form['new_password']
+    confirm_new_password = request.form['confirm_new_password']
+    from werkzeug.security import check_password_hash, generate_password_hash
+    if not check_password_hash(current_user.password_hash, current_password):
+        flash('Current password is incorrect.', 'danger')
+        return redirect(url_for('admin.admin_profile'))
+    if new_password != confirm_new_password:
+        flash('New passwords do not match.', 'danger')
+        return redirect(url_for('admin.admin_profile'))
+    current_user.password_hash = generate_password_hash(new_password)
+    db.session.commit()
+    flash('Password changed successfully.', 'success')
+    return redirect(url_for('admin.admin_profile'))
+
+@admin.route('/admin/update_preferences', methods=['POST'])
+@login_required
+@admin_required
+def update_admin_preferences():
+    current_user.receive_alerts = 'receive_alerts' in request.form
+    current_user.enable_2fa = 'enable_2fa' in request.form
+    db.session.commit()
+    flash('Preferences updated.', 'success')
+    return redirect(url_for('admin.admin_profile'))
+
+@admin.route('/admin/logout_other_sessions', methods=['POST'])
+@login_required
+@admin_required
+def logout_other_sessions():
+    # For demo: just flash message. Real implementation would revoke all other tokens/sessions.
+    flash('Other sessions have been logged out (demo only).', 'info')
+    return redirect(url_for('admin.admin_profile'))
+
+@admin.route('/admin/delete_account', methods=['POST'])
+@login_required
+@admin_required
+def delete_admin_account():
+    from flask_login import logout_user
+    user_id = current_user.id
+    logout_user()
+    user = User.query.get(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('Your admin account has been deleted.', 'warning')
+    return redirect(url_for('main.index'))
 
 @admin.route('/admin/users')
 @login_required
@@ -472,97 +538,95 @@ def unenroll_student(student_id, course_id):
     except Exception as e:
         db.session.rollback()
         flash(f'Error unenrolling student: {str(e)}', 'error')
-
     return redirect(url_for('admin.student_enrollments', student_id=student_id))
 
 @admin.route('/admin/analytics')
 @login_required
 @admin_required
 def analytics():
-    # Get overall statistics
+    from sqlalchemy import func
+    from datetime import timedelta
+    from app.models.academic import Assignment, AssignmentSubmission
+    from app.models.communication import Notification
+    
+    # User stats
     total_students = User.query.filter_by(role=UserRole.STUDENT.value).count()
     total_professors = User.query.filter_by(role=UserRole.PROFESSOR.value).count()
+    total_admins = User.query.filter_by(role=UserRole.ADMIN.value).count()
     total_courses = Course.query.count()
     total_programs = Program.query.count()
-    
-    # Get course performance data
-    courses = Course.query.filter_by(status='active').all()
-    course_stats = []
-    for course in courses:
-        records = AcademicRecord.query.filter_by(course_id=course.id).all()
-        grades = [r.grade for r in records if r.grade is not None]
-        
-        if grades:
-            stats = {
-                'course': course,
-                'average_grade': sum(grades) / len(grades),
-                'highest_grade': max(grades),
-                'lowest_grade': min(grades),
-                'passing_rate': len([g for g in grades if g >= 60]) / len(grades) * 100,
-                'total_students': len(grades)
-            }
-            course_stats.append(stats)
-    
-    # Get program performance data
+    total_users = User.query.count()
+
+    # Active users (last 30 days)
+    last_30 = datetime.utcnow() - timedelta(days=30)
+    active_users = User.query.filter(User.last_login != None, User.last_login >= last_30).count()
+
+    # User registrations per month (last 12 months)
+    months = []
+    counts = []
+    for i in range(11, -1, -1):
+        month = (datetime.utcnow().replace(day=1) - timedelta(days=30*i))
+        month_start = month.replace(day=1)
+        next_month = (month_start + timedelta(days=32)).replace(day=1)
+        count = User.query.filter(User.created_at >= month_start, User.created_at < next_month).count()
+        months.append(month_start.strftime('%b %Y'))
+        counts.append(count)
+
+    # User roles distribution
+    roles_labels = ['Student', 'Professor', 'Admin']
+    roles_counts = [total_students, total_professors, total_admins]
+
+    # Students per program
     programs = Program.query.all()
-    program_stats = []
-    for program in programs:
-        students = User.query.filter_by(program_id=program.id).all()
-        if students:
-            program_stats.append({
-                'program': program,
-                'total_students': len(students),
-                'active_courses': Course.query.filter_by(program_id=program.id, status='active').count()
-            })
-    
+    programs_labels = [p.name for p in programs]
+    students_per_program = [User.query.filter_by(role=UserRole.STUDENT.value, program_id=p.id).count() for p in programs]
+
+    # Grade distribution (all academic records)
+    all_grades = [r.grade for r in AcademicRecord.query.filter(AcademicRecord.grade != None).all()]
+    grade_bins = ['0-49', '50-59', '60-69', '70-79', '80-89', '90-100']
+    grade_bin_counts = [0]*6
+    for g in all_grades:
+        if g < 50: grade_bin_counts[0] += 1
+        elif g < 60: grade_bin_counts[1] += 1
+        elif g < 70: grade_bin_counts[2] += 1
+        elif g < 80: grade_bin_counts[3] += 1
+        elif g < 90: grade_bin_counts[4] += 1
+        else: grade_bin_counts[5] += 1
+
+    # Top 5 courses by enrollment
+    course_stats = []
+    courses = Course.query.all()
+    for course in courses:
+        enrolled = AcademicRecord.query.filter_by(course_id=course.id).count()
+        grades = [r.grade for r in AcademicRecord.query.filter_by(course_id=course.id).filter(AcademicRecord.grade != None).all()]
+        avg_grade = sum(grades)/len(grades) if grades else None
+        program_name = course.program.name if hasattr(course, 'program') and course.program else 'N/A'
+        course_stats.append({
+            'name': course.name,
+            'program_name': program_name,
+            'enrolled_students': enrolled,
+            'average_grade': avg_grade
+        })
+    top_courses = sorted(course_stats, key=lambda c: c['enrolled_students'], reverse=True)[:5]
+
     return render_template('admin/analytics.html',
                          title='Analytics Dashboard',
                          total_students=total_students,
                          total_professors=total_professors,
+                         total_admins=total_admins,
                          total_courses=total_courses,
                          total_programs=total_programs,
-                         course_stats=course_stats,
-                         program_stats=program_stats)
-
-@admin.route('/admin/policies', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def policies():
-    if request.method == 'POST':
-        try:
-            # Update global policies
-            policies = {
-                'assignment_late_penalty': float(request.form.get('assignment_late_penalty', 10)),
-                'minimum_passing_grade': float(request.form.get('minimum_passing_grade', 60)),
-                'attendance_requirement': float(request.form.get('attendance_requirement', 75)),
-                'grade_scale': request.form.get('grade_scale', 'letter'),  # letter or percentage
-                'allow_resubmissions': request.form.get('allow_resubmissions') == 'true',
-                'max_resubmissions': int(request.form.get('max_resubmissions', 1)),
-                'notification_lead_time': int(request.form.get('notification_lead_time', 7))  # days
-            }
-            
-            # Store policies in database or configuration
-            # This would require a Policy model or configuration system
-            
-            flash('Policies updated successfully!', 'success')
-            return redirect(url_for('admin.policies'))
-        except Exception as e:
-            flash(f'Error updating policies: {str(e)}', 'error')
-    
-    # Get current policies
-    current_policies = {
-        'assignment_late_penalty': 10,  # percentage per day
-        'minimum_passing_grade': 60,
-        'attendance_requirement': 75,
-        'grade_scale': 'letter',
-        'allow_resubmissions': True,
-        'max_resubmissions': 1,
-        'notification_lead_time': 7
-    }
-    
-    return render_template('admin/policies.html',
-                         title='System Policies',
-                         policies=current_policies)
+                         total_users=total_users,
+                         active_users=active_users,
+                         registrations_months=months,
+                         registrations_counts=counts,
+                         roles_labels=roles_labels,
+                         roles_counts=roles_counts,
+                         programs_labels=programs_labels,
+                         students_per_program=students_per_program,
+                         grade_bins=grade_bins,
+                         grade_bin_counts=grade_bin_counts,
+                         top_courses=top_courses)
 
 @admin.route('/admin/system')
 @login_required
