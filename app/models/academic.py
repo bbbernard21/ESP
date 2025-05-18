@@ -82,6 +82,7 @@ class CourseMaterial(db.Model):
     material_type = db.Column(db.String(50))  # lecture, assignment, reading, etc.
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    embedding = db.Column(db.PickleType)  # Stores the embedding vector as a Python list
 
 class Assignment(db.Model):
     __tablename__ = 'assignments'
@@ -167,11 +168,20 @@ class Quiz(db.Model):
     duration = db.Column(db.Integer)  # in minutes
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
+    due_date = db.Column(db.DateTime)  # Added for schedule feature; requires DB migration
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    weight = db.Column(db.Float, default=1.0)  # Weight for grade calculation
     
     # Relationships
     course = db.relationship('Course', backref='quizzes')
     submissions = db.relationship('QuizSubmission', backref='quiz', lazy='dynamic')
+    
+    def get_submission(self, student_id):
+        """Get the submission for this quiz by the given student."""
+        return QuizSubmission.query.filter_by(
+            student_id=student_id,
+            quiz_id=self.id
+        ).first()
 
 class QuizSubmission(db.Model):
     __tablename__ = 'quiz_submissions'
@@ -186,3 +196,33 @@ class QuizSubmission(db.Model):
     
     # Relationships
     student = db.relationship('User', backref='quiz_submissions') 
+
+class SemesterGoal(db.Model):
+    __tablename__ = 'semester_goals'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    academic_year = db.Column(db.String(20), nullable=False)  # e.g., "2023-2024"
+    semester = db.Column(db.String(20), nullable=False)  # Fall, Spring, Summer
+    target_gpa = db.Column(db.Float, nullable=False)
+    current_gpa = db.Column(db.Float)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    student = db.relationship('User', backref='semester_goals')
+    module_goals = db.relationship('ModuleGoal', backref='semester_goal', lazy='dynamic')
+
+class ModuleGoal(db.Model):
+    __tablename__ = 'module_goals'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    semester_goal_id = db.Column(db.Integer, db.ForeignKey('semester_goals.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    target_grade = db.Column(db.Float, nullable=False)
+    current_grade = db.Column(db.Float)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    course = db.relationship('Course', backref='module_goals') 

@@ -1,6 +1,24 @@
 from app import db
 from datetime import datetime
 
+class Attachment(db.Model):
+    __tablename__ = 'attachments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(255), nullable=False)
+    file_type = db.Column(db.String(100))
+    file_size = db.Column(db.Integer)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    message_id = db.Column(db.Integer, db.ForeignKey('messages.id'))
+    chat_message_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'))
+    discussion_post_id = db.Column(db.Integer, db.ForeignKey('discussion_posts.id'))
+    
+    # Relationships
+    message = db.relationship('Message', backref='attachments')
+    chat_message = db.relationship('ChatMessage', backref='attachments')
+    discussion_post = db.relationship('DiscussionPost', backref='attachments')
+
 class Message(db.Model):
     __tablename__ = 'messages'
     
@@ -12,10 +30,11 @@ class Message(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     read = db.Column(db.Boolean, default=False)
     read_at = db.Column(db.DateTime)
+    content_type = db.Column(db.String(20), default='text')  # text, rich_text
     
     # Relationships
-    sender = db.relationship('User', foreign_keys=[sender_id], backref='messages_sent')
-    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='messages_received')
+    sender = db.relationship('User', foreign_keys=[sender_id], back_populates='messages_sent', overlaps="message_sender")
+    recipient = db.relationship('User', foreign_keys=[recipient_id], back_populates='messages_received', overlaps="message_recipient")
 
 class Announcement(db.Model):
     __tablename__ = 'announcements'
@@ -71,7 +90,7 @@ class ChatParticipant(db.Model):
     last_read_at = db.Column(db.DateTime)
     
     # Relationship
-    user = db.relationship('User', backref='chat_memberships')
+    user = db.relationship('User', back_populates='chat_memberships', overlaps="participant,chat_memberships")
 
 class ChatMessage(db.Model):
     __tablename__ = 'chat_messages'
@@ -81,6 +100,7 @@ class ChatMessage(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     body = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    content_type = db.Column(db.String(20), default='text')  # text, rich_text
     
     # For tracking who has read the message in group chats
     read_by = db.relationship('ChatMessageRead', backref='message')
@@ -125,6 +145,7 @@ class DiscussionPost(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('discussion_posts.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    content_type = db.Column(db.String(20), default='text')  # text, rich_text
     
     # Relationships
     author = db.relationship('User', backref='discussion_posts')
@@ -143,7 +164,7 @@ class Notification(db.Model):
     read_at = db.Column(db.DateTime)
     
     # Relationships - removing the backref to avoid conflicts
-    user = db.relationship('User')
+    user = db.relationship('User', back_populates='notifications', overlaps="notification_user")
     
     def mark_as_read(self):
         self.read = True

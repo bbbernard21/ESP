@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
+from flask_socketio import SocketIO
 from config import Config
 import os
 import timeago
@@ -12,6 +13,7 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 mail = Mail()
+socketio = SocketIO(cors_allowed_origins='*')
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -22,6 +24,7 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     mail.init_app(app)
+    socketio.init_app(app)
 
     login_manager.login_view = 'auth.login'
     login_manager.login_message_category = 'info'
@@ -39,7 +42,7 @@ def create_app(config_class=Config):
 
     with app.app_context():
         # Import models to ensure they are known to Flask-Migrate
-        from app.models import user, academic, communication
+        from app.models import user, academic, communication, faq
 
         # Register blueprints
         from app.routes.auth import auth as auth_blueprint
@@ -49,6 +52,7 @@ def create_app(config_class=Config):
         from app.routes.admin import admin as admin_blueprint
         from app.routes.professor import professor as professor_blueprint
         from app.routes.student import student as student_blueprint
+        from app.routes.chatbot import chatbot_bp
 
         app.register_blueprint(auth_blueprint)
         app.register_blueprint(main_blueprint)
@@ -57,6 +61,7 @@ def create_app(config_class=Config):
         app.register_blueprint(admin_blueprint, url_prefix='/admin')
         app.register_blueprint(professor_blueprint)
         app.register_blueprint(student_blueprint)
+        app.register_blueprint(chatbot_bp)
 
         # Register error handlers
         @app.errorhandler(404)
@@ -73,4 +78,8 @@ def create_app(config_class=Config):
         from app.scheduler import init_scheduler
         init_scheduler()
 
-    return app 
+        # Register CLI commands
+        from app import cli
+        cli.init_app(app)
+
+    return app, socketio

@@ -4,7 +4,7 @@ from app.models.academic import Course, AcademicRecord, AcademicGoal, CourseMate
 from app.models.communication import Message, Notification, Conversation, Discussion, DiscussionPost, Announcement
 from app.models.admin import Admin
 
-app = create_app()
+app, socketio = create_app()
 
 @app.shell_context_processor
 def make_shell_context():
@@ -28,4 +28,4 @@ def make_shell_context():
     }
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    socketio.run(app, debug=True)

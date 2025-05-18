@@ -11,4 +11,6 @@ Flask-Migrate==4.0.5
 PyJWT==2.8.0
 bcrypt==4.0.1
 python-dateutil==2.8.2
-timeago==1.0.16 
+timeago==1.0.16
+Flask-SocketIO==5.3.6
+python-socketio==5.11.2

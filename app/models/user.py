@@ -12,6 +12,11 @@ class UserRole(Enum):
     ADMIN = 'ADMIN'
 
 class User(UserMixin, db.Model):
+    # ... existing fields ...
+    notifications = db.relationship('Notification', back_populates='user', cascade='all, delete-orphan')
+    messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', back_populates='sender', cascade='all, delete-orphan')
+    messages_received = db.relationship('Message', foreign_keys='Message.recipient_id', back_populates='recipient', cascade='all, delete-orphan')
+    chat_memberships = db.relationship('ChatParticipant', back_populates='user', cascade='all, delete-orphan', overlaps="user")
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
